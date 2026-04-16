@@ -1,0 +1,2642 @@
+openapi: 3.1.0
+info:
+  title: hardened-groupware-template API
+  version: 0.1.0
+  summary: External / Internal / External Internal API contract
+  description: |
+    hardened-groupware-template의 API 명세 초안.
+    - External User API
+    - Internal Groupware API
+    - External Admin Internal API
+    - Session/Cookie auth + CSRF
+    - Async file scan flow
+
+servers:
+  - url: http://localhost:8080
+    description: Local external-api
+  - url: http://localhost:8081
+    description: Local internal-api
+
+tags:
+  - name: External Auth
+  - name: External CSRF
+  - name: External News
+  - name: External Notices
+  - name: External Resources
+  - name: External Support
+  - name: External Me
+  - name: External Careers
+  - name: External Files
+  - name: Internal Auth
+  - name: Internal CSRF
+  - name: Internal Notices
+  - name: Internal Employees
+  - name: Internal Approvals
+  - name: Internal Applicants
+  - name: Internal Support
+  - name: Internal Admin
+  - name: Internal Files
+  - name: External Internal Admin
+
+paths:
+  /api/external/csrf:
+    get:
+      tags: [External CSRF]
+      summary: 공개 서비스 CSRF 토큰 발급
+      operationId: getExternalCsrfToken
+      responses:
+        "200":
+          description: CSRF 토큰 발급 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfTokenResponse"
+
+  /api/external/auth/signup:
+    post:
+      tags: [External Auth]
+      summary: 일반 사용자 회원가입
+      operationId: externalSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalSignupRequest"
+      responses:
+        "201":
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "409":
+          $ref: "#/components/responses/ConflictResponse"
+
+  /api/external/auth/login:
+    post:
+      tags: [External Auth]
+      summary: 일반 사용자 로그인
+      operationId: externalLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 로그인 성공
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Session cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalSessionResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitResponse"
+
+  /api/external/auth/logout:
+    post:
+      tags: [External Auth]
+      summary: 일반 사용자 로그아웃
+      operationId: externalLogout
+      security:
+        - ExternalSessionAuth: []
+          CsrfHeader: []
+      responses:
+        "200":
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/auth/password-reset/request:
+    post:
+      tags: [External Auth]
+      summary: 공개 사용자 비밀번호 재설정 요청
+      operationId: externalPasswordResetRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "202":
+          description: 요청 접수
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "429":
+          $ref: "#/components/responses/RateLimitResponse"
+
+  /api/external/auth/password-reset/confirm:
+    post:
+      tags: [External Auth]
+      summary: 공개 사용자 비밀번호 재설정 확정
+      operationId: externalPasswordResetConfirm
+      security:
+        - CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetConfirmRequest"
+      responses:
+        "200":
+          description: 비밀번호 재설정 완료
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/news:
+    get:
+      tags: [External News]
+      summary: 공개 뉴스 목록 조회
+      operationId: getExternalNewsList
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 뉴스 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalNewsListResponse"
+
+  /api/external/news/{newsId}:
+    get:
+      tags: [External News]
+      summary: 공개 뉴스 상세 조회
+      operationId: getExternalNewsDetail
+      parameters:
+        - $ref: "#/components/parameters/NewsIdParam"
+      responses:
+        "200":
+          description: 뉴스 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalNewsDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/notices:
+    get:
+      tags: [External Notices]
+      summary: 공개 공지 목록 조회
+      operationId: getExternalNotices
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 공지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalNoticeListResponse"
+
+  /api/external/notices/{noticeId}:
+    get:
+      tags: [External Notices]
+      summary: 공개 공지 상세 조회
+      operationId: getExternalNoticeDetail
+      parameters:
+        - $ref: "#/components/parameters/NoticeIdParam"
+      responses:
+        "200":
+          description: 공지 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalNoticeDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/support-tickets:
+    post:
+      tags: [External Support]
+      summary: 고객센터 문의 등록
+      operationId: createSupportTicket
+      security:
+        - ExternalSessionAuth: []
+          CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SupportTicketCreateRequest"
+      responses:
+        "202":
+          description: 문의 접수 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicketAcceptedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitResponse"
+
+  /api/external/support-tickets/me:
+    get:
+      tags: [External Support]
+      summary: 내 문의 목록 조회
+      operationId: getMySupportTickets
+      security:
+        - ExternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 문의 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalSupportTicketListResponse"
+
+  /api/external/support-tickets/{ticketId}:
+    get:
+      tags: [External Support]
+      summary: 내 문의 상세 조회
+      operationId: getMySupportTicketDetail
+      description: 본인 소유 리소스가 아니면 404를 반환해 리소스 존재 여부를 숨긴다.
+      security:
+        - ExternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketIdParam"
+      responses:
+        "200":
+          description: 문의 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalSupportTicketDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/resources:
+    get:
+      tags: [External Resources]
+      summary: 공개 자료 목록 조회
+      operationId: getExternalResources
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 자료 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalResourceListResponse"
+
+  /api/external/resources/{resourceId}:
+    get:
+      tags: [External Resources]
+      summary: 공개 자료 상세 조회
+      operationId: getExternalResourceDetail
+      parameters:
+        - $ref: "#/components/parameters/ResourceIdParam"
+      responses:
+        "200":
+          description: 자료 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalResourceDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/resources/{resourceId}/download:
+    get:
+      tags: [External Resources]
+      summary: 공개 자료 다운로드
+      operationId: downloadExternalResource
+      parameters:
+        - $ref: "#/components/parameters/ResourceIdParam"
+      responses:
+        "200":
+          description: 자료 다운로드 성공
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/careers:
+    get:
+      tags: [External Careers]
+      summary: 채용 공고 목록 조회
+      operationId: getCareerPosts
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 채용 공고 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerPostListResponse"
+
+  /api/external/careers/{careerId}:
+    get:
+      tags: [External Careers]
+      summary: 채용 공고 상세 조회
+      operationId: getCareerPostDetail
+      parameters:
+        - $ref: "#/components/parameters/CareerIdParam"
+      responses:
+        "200":
+          description: 채용 공고 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerPostDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/careers/{careerId}/applications:
+    post:
+      tags: [External Careers]
+      summary: 채용 공고 지원서 제출
+      operationId: submitCareerApplication
+      security:
+        - ExternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/CareerIdParam"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CareerApplicationCreateRequest"
+      responses:
+        "202":
+          description: 지원서 업로드 접수 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileAcceptedResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitResponse"
+
+  /api/external/careers/applications/me:
+    get:
+      tags: [External Careers]
+      summary: 내 지원 내역 조회
+      operationId: getMyCareerApplications
+      security:
+        - ExternalSessionAuth: []
+      responses:
+        "200":
+          description: 지원 내역 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerApplicationListResponse"
+
+  /api/external/files/{fileId}/status:
+    get:
+      tags: [External Files]
+      summary: 공개 서비스 파일 상태 조회
+      operationId: getExternalFileStatus
+      security:
+        - ExternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileIdParam"
+      responses:
+        "200":
+          description: 파일 상태 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileStatusResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/me:
+    get:
+      tags: [External Me]
+      summary: 현재 로그인한 공개 사용자 조회
+      operationId: getExternalMe
+      security:
+        - ExternalSessionAuth: []
+      responses:
+        "200":
+          description: 내 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalMeResponse"
+    patch:
+      tags: [External Me]
+      summary: 내 정보 수정
+      operationId: updateExternalMe
+      security:
+        - ExternalSessionAuth: []
+          CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalMeUpdateRequest"
+      responses:
+        "200":
+          description: 내 정보 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalMeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+
+  /api/external/me/download-history:
+    get:
+      tags: [External Me]
+      summary: 내 다운로드 이력 조회
+      operationId: getMyDownloadHistory
+      security:
+        - ExternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 다운로드 이력 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalDownloadHistoryListResponse"
+
+  /api/internal/csrf:
+    get:
+      tags: [Internal CSRF]
+      summary: 내부 그룹웨어 CSRF 토큰 발급
+      operationId: getInternalCsrfToken
+      responses:
+        "200":
+          description: CSRF 토큰 발급 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfTokenResponse"
+
+  /api/internal/auth/login:
+    post:
+      tags: [Internal Auth]
+      summary: 내부 사용자 로그인
+      operationId: internalLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 로그인 성공
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalSessionResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitResponse"
+
+  /api/internal/auth/logout:
+    post:
+      tags: [Internal Auth]
+      summary: 내부 사용자 로그아웃
+      operationId: internalLogout
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      responses:
+        "200":
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/auth/me:
+    get:
+      tags: [Internal Auth]
+      summary: 현재 로그인한 내부 사용자 조회
+      operationId: getInternalMe
+      security:
+        - InternalSessionAuth: []
+      responses:
+        "200":
+          description: 사용자 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalSessionResponse"
+
+  /api/internal/notices:
+    get:
+      tags: [Internal Notices]
+      summary: 사내 공지 목록 조회
+      operationId: getInternalNotices
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 공지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalNoticeListResponse"
+    post:
+      tags: [Internal Notices]
+      summary: 사내 공지 생성
+      operationId: createInternalNotice
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalNoticeCreateRequest"
+      responses:
+        "201":
+          description: 공지 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalNoticeDetailResponse"
+
+  /api/internal/notices/{noticeId}:
+    get:
+      tags: [Internal Notices]
+      summary: 사내 공지 상세 조회
+      operationId: getInternalNoticeDetail
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/NoticeIdParam"
+      responses:
+        "200":
+          description: 공지 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalNoticeDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+    patch:
+      tags: [Internal Notices]
+      summary: 사내 공지 수정
+      operationId: updateInternalNotice
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/NoticeIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalNoticeUpdateRequest"
+      responses:
+        "200":
+          description: 공지 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalNoticeDetailResponse"
+    delete:
+      tags: [Internal Notices]
+      summary: 사내 공지 삭제
+      operationId: deleteInternalNotice
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/NoticeIdParam"
+      responses:
+        "200":
+          description: 공지 삭제 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/employees:
+    get:
+      tags: [Internal Employees]
+      summary: 사원 디렉토리 조회
+      operationId: getEmployees
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/KeywordParam"
+      responses:
+        "200":
+          description: 사원 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeListResponse"
+
+  /api/internal/employees/{employeeId}:
+    get:
+      tags: [Internal Employees]
+      summary: 사원 상세 조회
+      operationId: getEmployeeDetail
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/EmployeeIdParam"
+      responses:
+        "200":
+          description: 사원 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/internal/approvals:
+    get:
+      tags: [Internal Approvals]
+      summary: 전자결재 목록 조회
+      operationId: getApprovals
+      security:
+        - InternalSessionAuth: []
+      responses:
+        "200":
+          description: 결재 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalListResponse"
+    post:
+      tags: [Internal Approvals]
+      summary: 전자결재 생성
+      operationId: createApproval
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalCreateRequest"
+      responses:
+        "201":
+          description: 전자결재 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalDetailResponse"
+
+  /api/internal/approvals/{approvalId}:
+    get:
+      tags: [Internal Approvals]
+      summary: 전자결재 상세 조회
+      operationId: getApprovalDetail
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ApprovalIdParam"
+      responses:
+        "200":
+          description: 전자결재 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/internal/approvals/{approvalId}/approve:
+    patch:
+      tags: [Internal Approvals]
+      summary: 전자결재 승인
+      operationId: approveApproval
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ApprovalIdParam"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecisionRequest"
+      responses:
+        "200":
+          description: 승인 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/approvals/{approvalId}/reject:
+    patch:
+      tags: [Internal Approvals]
+      summary: 전자결재 반려
+      operationId: rejectApproval
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ApprovalIdParam"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecisionRequest"
+      responses:
+        "200":
+          description: 반려 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/applicants:
+    get:
+      tags: [Internal Applicants]
+      summary: 지원자 목록 조회
+      operationId: getApplicants
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 지원자 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalApplicantListResponse"
+
+  /api/internal/applicants/{applicationId}:
+    get:
+      tags: [Internal Applicants]
+      summary: 지원자 상세 조회
+      operationId: getApplicantDetail
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ApplicationIdParam"
+      responses:
+        "200":
+          description: 지원자 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicantDetailResponse"
+
+  /api/internal/applicants/{applicationId}/status:
+    patch:
+      tags: [Internal Applicants]
+      summary: 지원자 상태 변경
+      operationId: updateApplicantStatus
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ApplicationIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicantStatusUpdateRequest"
+      responses:
+        "200":
+          description: 지원자 상태 변경 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/applicants/{applicationId}/notes:
+    post:
+      tags: [Internal Applicants]
+      summary: 지원자 메모 등록
+      operationId: addApplicantNote
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/ApplicationIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicantNoteCreateRequest"
+      responses:
+        "201":
+          description: 메모 등록 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/support-tickets:
+    get:
+      tags: [Internal Support]
+      summary: 고객 문의 목록 조회
+      operationId: getInternalSupportTickets
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 고객 문의 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalSupportTicketListResponse"
+
+  /api/internal/support-tickets/{ticketId}:
+    get:
+      tags: [Internal Support]
+      summary: 고객 문의 상세 조회
+      operationId: getInternalSupportTicketDetail
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketIdParam"
+      responses:
+        "200":
+          description: 고객 문의 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalSupportTicketDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/internal/support-tickets/{ticketId}/status:
+    patch:
+      tags: [Internal Support]
+      summary: 고객 문의 상태 변경
+      operationId: updateInternalSupportTicketStatus
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/TicketIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketStatusUpdateRequest"
+      responses:
+        "200":
+          description: 고객 문의 상태 변경 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/support-tickets/{ticketId}/reply:
+    post:
+      tags: [Internal Support]
+      summary: 고객 문의 답변 등록
+      operationId: replyInternalSupportTicket
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      parameters:
+        - $ref: "#/components/parameters/TicketIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketReplyRequest"
+      responses:
+        "201":
+          description: 고객 문의 답변 등록 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/internal/admin/dashboard:
+    get:
+      tags: [Internal Admin]
+      summary: 관리자 대시보드 조회
+      operationId: getInternalAdminDashboard
+      security:
+        - InternalSessionAuth: []
+      responses:
+        "200":
+          description: 관리자 대시보드 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalAdminDashboardResponse"
+
+  /api/internal/admin/audit-logs:
+    get:
+      tags: [Internal Admin]
+      summary: 감사 로그 조회
+      operationId: getInternalAuditLogs
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 감사 로그 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalAuditLogListResponse"
+
+  /api/internal/admin/external-users:
+    get:
+      tags: [Internal Admin]
+      summary: 공개 사용자 목록 조회(관리자)
+      operationId: getInternalAdminExternalUsers
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 공개 사용자 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalUserListResponse"
+
+  /api/internal/admin/external-resources:
+    get:
+      tags: [Internal Admin]
+      summary: 공개 자료 목록 조회(관리자)
+      operationId: getInternalAdminExternalResources
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 공개 자료 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalInternalResourceListResponse"
+
+  /api/internal/admin/quarantine-logs:
+    get:
+      tags: [Internal Admin]
+      summary: 파일 검역 로그 목록 조회
+      operationId: getInternalAdminQuarantineLogs
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 파일 검역 로그 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalAdminQuarantineLogListResponse"
+
+  /api/internal/files/{fileId}/status:
+    get:
+      tags: [Internal Files]
+      summary: 내부 검토 파일 상태 조회
+      operationId: getInternalFileStatus
+      security:
+        - InternalSessionAuth: []
+      parameters:
+        - $ref: "#/components/parameters/FileIdParam"
+      responses:
+        "200":
+          description: 파일 상태 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileStatusResponse"
+
+  /api/external/internal/users:
+    get:
+      tags: [External Internal Admin]
+      summary: 공개 사용자 목록 조회
+      operationId: getExternalUsersForAdmin
+      security:
+        - ServiceTokenAuth: []
+      responses:
+        "200":
+          description: 사용자 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalUserListResponse"
+
+  /api/external/internal/users/{userId}:
+    get:
+      tags: [External Internal Admin]
+      summary: 공개 사용자 상세 조회
+      operationId: getExternalUserDetailForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "200":
+          description: 공개 사용자 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalUserDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+
+  /api/external/internal/resources:
+    get:
+      tags: [External Internal Admin]
+      summary: 공개 자료 목록 조회(내부 관리)
+      operationId: getExternalResourcesForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 공개 자료 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalInternalResourceListResponse"
+
+  /api/external/internal/resources/{resourceId}/publish:
+    patch:
+      tags: [External Internal Admin]
+      summary: 공개 자료 게시 처리
+      operationId: publishExternalResourceForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceIdParam"
+      responses:
+        "200":
+          description: 공개 자료 게시 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/resources/{resourceId}/archive:
+    patch:
+      tags: [External Internal Admin]
+      summary: 공개 자료 보관 처리
+      operationId: archiveExternalResourceForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceIdParam"
+      responses:
+        "200":
+          description: 공개 자료 보관 처리 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/resources/{resourceId}:
+    delete:
+      tags: [External Internal Admin]
+      summary: 공개 자료 삭제
+      operationId: deleteExternalResourceForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ResourceIdParam"
+      responses:
+        "200":
+          description: 공개 자료 삭제 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/support-tickets:
+    get:
+      tags: [External Internal Admin]
+      summary: 공개 문의 목록 조회(내부 관리)
+      operationId: getExternalSupportTicketsForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+      responses:
+        "200":
+          description: 공개 문의 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalInternalSupportTicketListResponse"
+
+  /api/external/internal/support-tickets/{ticketId}/status:
+    patch:
+      tags: [External Internal Admin]
+      summary: 공개 문의 상태 변경(내부 관리)
+      operationId: updateExternalSupportTicketStatusForAdmin
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalInternalSupportTicketStatusUpdateRequest"
+      responses:
+        "200":
+          description: 공개 문의 상태 변경 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/users/{userId}/deactivate:
+    patch:
+      tags: [External Internal Admin]
+      summary: 공개 사용자 비활성화
+      operationId: deactivateExternalUser
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "200":
+          description: 비활성화 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/users/{userId}/activate:
+    patch:
+      tags: [External Internal Admin]
+      summary: 공개 사용자 활성화
+      operationId: activateExternalUser
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "200":
+          description: 활성화 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+  /api/external/internal/users/{userId}/password-reset:
+    post:
+      tags: [External Internal Admin]
+      summary: 공개 사용자 비밀번호 초기화
+      operationId: resetExternalUserPassword
+      security:
+        - ServiceTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      responses:
+        "202":
+          description: 비밀번호 초기화 요청 접수
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+
+components:
+  securitySchemes:
+    ExternalSessionAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: External API session cookie
+
+    InternalSessionAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Internal API session cookie
+
+    CsrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: Required for POST/PUT/PATCH/DELETE with session auth
+
+    ServiceTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+      description: Internal service-to-service auth token
+
+  parameters:
+    PageParam:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    SizeParam:
+      in: query
+      name: size
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+    SortParam:
+      in: query
+      name: sort
+      schema:
+        type: string
+        example: createdAt,desc
+
+    KeywordParam:
+      in: query
+      name: keyword
+      schema:
+        type: string
+
+    NewsIdParam:
+      in: path
+      name: newsId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    NoticeIdParam:
+      in: path
+      name: noticeId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    ResourceIdParam:
+      in: path
+      name: resourceId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    TicketIdParam:
+      in: path
+      name: ticketId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    EmployeeIdParam:
+      in: path
+      name: employeeId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    ApprovalIdParam:
+      in: path
+      name: approvalId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    CareerIdParam:
+      in: path
+      name: careerId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    FileIdParam:
+      in: path
+      name: fileId
+      required: true
+      schema:
+        type: string
+
+    ApplicationIdParam:
+      in: path
+      name: applicationId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    UserIdParam:
+      in: path
+      name: userId
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    BadRequestResponse:
+      description: 잘못된 요청
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    UnauthorizedResponse:
+      description: 인증 실패
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    ForbiddenResponse:
+      description: 권한 부족
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFoundResponse:
+      description: 대상 없음
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    ConflictResponse:
+      description: 충돌
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    RateLimitResponse:
+      description: 호출 횟수 제한 초과
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ApiResponseBase:
+      type: object
+      required: [success, code, message, timestamp]
+      properties:
+        success:
+          type: boolean
+        code:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApiResponseVoid:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: "null"
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: "null"
+
+    CsrfTokenResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [csrfToken]
+              properties:
+                csrfToken:
+                  type: string
+
+    LoginRequest:
+      type: object
+      required: [loginId, password]
+      properties:
+        loginId:
+          type: string
+        password:
+          type: string
+          format: password
+
+    ExternalSignupRequest:
+      type: object
+      required: [loginId, password, email, name]
+      properties:
+        loginId:
+          type: string
+        password:
+          type: string
+          format: password
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          format: password
+
+    ExternalSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ExternalUserSession"
+
+    InternalSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/InternalUserSession"
+
+    ExternalMeResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                userId:
+                  type: integer
+                  format: int64
+                loginId:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  example: PUBLIC_USER
+
+    ExternalMeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+
+    ExternalUserSession:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        loginId:
+          type: string
+        role:
+          type: string
+          example: PUBLIC_USER
+
+    InternalUserSession:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        employeeNo:
+          type: string
+        role:
+          type: string
+          example: EMPLOYEE
+
+    PageMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+
+    ExternalNewsItem:
+      type: object
+      properties:
+        newsId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalNewsListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalNewsItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalNewsDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                newsId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                content:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+
+    ExternalNoticeItem:
+      type: object
+      properties:
+        noticeId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalNoticeListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalNoticeItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalNoticeDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                noticeId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                content:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+
+    SupportTicketCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        attachment:
+          type: string
+          format: binary
+
+    SupportTicketAcceptedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                ticketId:
+                  type: integer
+                  format: int64
+                fileId:
+                  type: string
+                  nullable: true
+                jobId:
+                  type: string
+                  nullable: true
+                status:
+                  type: string
+                  enum: [PENDING, SCANNING]
+
+    ExternalSupportTicketListItem:
+      type: object
+      properties:
+        ticketId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        category:
+          type: string
+          enum: [ACCOUNT, RESOURCE, CAREER, TECHNICAL, OTHER]
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+        fileId:
+          type: string
+          nullable: true
+        fileStatus:
+          type: string
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalSupportTicketListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalSupportTicketListItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalSupportTicketDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                ticketId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                content:
+                  type: string
+                status:
+                  type: string
+                  enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+                fileId:
+                  type: string
+                  nullable: true
+                fileStatus:
+                  type: string
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+                  nullable: true
+                fileStatusReason:
+                  type: string
+                  nullable: true
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+
+    ExternalResourceItem:
+      type: object
+      properties:
+        resourceId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        fileId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalResourceListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalResourceItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalResourceDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                resourceId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                description:
+                  type: string
+                fileId:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+
+    CareerPostSummary:
+      type: object
+      properties:
+        careerId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        department:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+
+    CareerPostListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CareerPostSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    CareerPostDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                careerId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+
+    CareerApplicationCreateRequest:
+      type: object
+      required: [name, email, resumeFile]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        coverLetter:
+          type: string
+        resumeFile:
+          type: string
+          format: binary
+
+    FileAcceptedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [fileId, jobId, status]
+              properties:
+                fileId:
+                  type: string
+                jobId:
+                  type: string
+                status:
+                  type: string
+                  enum: [PENDING, SCANNING]
+
+    CareerApplicationItem:
+      type: object
+      properties:
+        applicationId:
+          type: integer
+          format: int64
+        careerId:
+          type: integer
+          format: int64
+        careerTitle:
+          type: string
+        applicationStatus:
+          type: string
+          enum: [SUBMITTED, REVIEWING, PASSED, REJECTED]
+        fileId:
+          type: string
+          nullable: true
+        fileStatus:
+          type: string
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+          nullable: true
+        appliedAt:
+          type: string
+          format: date-time
+
+    CareerApplicationListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CareerApplicationItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    FileStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [fileId, jobId, status]
+              properties:
+                fileId:
+                  type: string
+                jobId:
+                  type: string
+                status:
+                  type: string
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+                reason:
+                  type: string
+                  nullable: true
+
+    InternalNoticeCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+
+    InternalNoticeUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+
+    InternalNoticeSummary:
+      type: object
+      properties:
+        noticeId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        authorName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InternalNoticeListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/InternalNoticeSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    InternalNoticeDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+
+              properties:
+                noticeId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                content:
+                  type: string
+                authorId:
+                  type: integer
+                  format: int64
+                authorName:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+
+    EmployeeSummary:
+      type: object
+      properties:
+        employeeId:
+          type: integer
+          format: int64
+        employeeNo:
+          type: string
+        name:
+          type: string
+        department:
+          type: string
+        position:
+          type: string
+        email:
+          type: string
+          format: email
+
+    EmployeeDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: "#/components/schemas/EmployeeSummary"
+                - type: object
+                  properties:
+                    phone:
+                      type: string
+                    role:
+                      type: string
+                    status:
+                      type: string
+                      enum: [ACTIVE, INACTIVE]
+
+    EmployeeListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/EmployeeSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ApprovalSummary:
+      type: object
+      properties:
+        approvalId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, PENDING, APPROVED, REJECTED]
+        requesterName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ApprovalDecisionRequest:
+      type: object
+      properties:
+        comment:
+          type: string
+
+    ApprovalCreateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+
+    ApprovalListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ApprovalSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ApprovalDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+
+              properties:
+                approvalId:
+                  type: integer
+                  format: int64
+                title:
+                  type: string
+                content:
+                  type: string
+                status:
+                  type: string
+                  enum: [DRAFT, PENDING, APPROVED, REJECTED]
+                requesterId:
+                  type: integer
+                  format: int64
+                requesterName:
+                  type: string
+                approverId:
+                  type: integer
+                  format: int64
+                  nullable: true
+                approverName:
+                  type: string
+                  nullable: true
+                createdAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+
+    InternalApplicantSummary:
+      type: object
+      properties:
+        applicationId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        careerId:
+          type: integer
+          format: int64
+        careerTitle:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+        submittedAt:
+          type: string
+          format: date-time
+
+    InternalApplicantListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/InternalApplicantSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ApplicantDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+
+              properties:
+                applicationId:
+                  type: integer
+                  format: int64
+                careerId:
+                  type: integer
+                  format: int64
+                careerTitle:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                coverLetter:
+                  type: string
+                status:
+                  type: string
+                  enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+                fileId:
+                  type: string
+                  nullable: true
+                fileStatus:
+                  type: string
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+                  nullable: true
+                submittedAt:
+                  type: string
+                  format: date-time
+                updatedAt:
+                  type: string
+                  format: date-time
+
+    ApplicantStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+
+    ApplicantNoteCreateRequest:
+      type: object
+      required: [note]
+      properties:
+        note:
+          type: string
+
+    SupportTicketStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+
+    SupportTicketReplyRequest:
+      type: object
+      required: [reply]
+      properties:
+        reply:
+          type: string
+
+    InternalSupportTicketSummary:
+      type: object
+      properties:
+        ticketId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+        requesterId:
+          type: integer
+          format: int64
+        requesterName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    InternalSupportTicketListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/InternalSupportTicketSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    InternalSupportTicketDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: "#/components/schemas/InternalSupportTicketSummary"
+                - type: object
+                  properties:
+                    content:
+                      type: string
+                    fileId:
+                      type: string
+                      nullable: true
+                    fileStatus:
+                      type: string
+                      enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+                      nullable: true
+                    updatedAt:
+                      type: string
+                      format: date-time
+
+    InternalAdminDashboardResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                pendingApprovals:
+                  type: integer
+                pendingTickets:
+                  type: integer
+                applicantsInReview:
+                  type: integer
+                quarantinedFiles:
+                  type: integer
+
+    InternalAuditLogItem:
+      type: object
+      properties:
+        auditLogId:
+          type: integer
+          format: int64
+        actorId:
+          type: integer
+          format: int64
+        actorName:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    InternalAuditLogListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/InternalAuditLogItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    InternalAdminQuarantineLogItem:
+      type: object
+      properties:
+        jobId:
+          type: integer
+          format: int64
+        fileId:
+          type: string
+        sourceType:
+          type: string
+          enum: [CAREER_APPLICATION, SUPPORT_TICKET, RESOURCE_UPLOAD, OTHER]
+        sourceId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+        reason:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    InternalAdminQuarantineLogListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/InternalAdminQuarantineLogItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalUserSummary:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        loginId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalUserDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: "#/components/schemas/ExternalUserSummary"
+                - type: object
+                  properties:
+                    lastLoginAt:
+                      type: string
+                      format: date-time
+                      nullable: true
+
+    ExternalInternalResourceItem:
+      type: object
+      properties:
+        resourceId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, ARCHIVED]
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalInternalResourceListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalInternalResourceItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalInternalSupportTicketStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+
+    ExternalInternalSupportTicketItem:
+      type: object
+      properties:
+        ticketId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
+        userId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+
+    ExternalInternalSupportTicketListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalInternalSupportTicketItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalDownloadHistoryItem:
+      type: object
+      properties:
+        downloadId:
+          type: integer
+          format: int64
+        resourceId:
+          type: integer
+          format: int64
+        resourceTitle:
+          type: string
+        downloadedAt:
+          type: string
+          format: date-time
+
+    ExternalDownloadHistoryListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalDownloadHistoryItem"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
+
+    ExternalUserListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ExternalUserSummary"
+                page:
+                  $ref: "#/components/schemas/PageMeta"
