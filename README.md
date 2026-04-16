@@ -220,6 +220,7 @@ hardened-groupware-template/
 
    - `docs/rules/GIT_COLLABORATION_RULES.md`
    - `docs/rules/PR_CHECKLIST.md`
+   - `docs/rules/ACCOUNT_SEPARATION_DRAFT.md` (편집중 초안)
 
 12. 보안 운영 기준
 
