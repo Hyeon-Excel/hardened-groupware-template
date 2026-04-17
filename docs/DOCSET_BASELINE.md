@@ -35,6 +35,7 @@
 | 테스트 전략           | [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md)                                               | 단위/통합/E2E 범위 및 품질 게이트 기준   |
 | 협업 Git 규칙         | [docs/rules/GIT_COLLABORATION_RULES.md](rules/GIT_COLLABORATION_RULES.md)                               | 브랜치/커밋/병합 협업 기준               |
 | PR 체크리스트         | [docs/rules/PR_CHECKLIST.md](rules/PR_CHECKLIST.md)                                                     | PR 품질 게이트 및 문서 동기화 기준       |
+| 백엔드 부트스트랩 규칙 | [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md)                       | external/internal API 공통 생성 기준     |
 
 ---
 
@@ -50,6 +51,7 @@
 6. 세션/서비스 토큰/보안 헤더 정책은 [docs/security/SECURITY_BASELINE.md](security/SECURITY_BASELINE.md)를 우선한다.
 7. 테스트 범위/품질 게이트 충돌 시 [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md)를 우선한다.
 8. 브랜치/커밋/PR 운영 규칙 충돌 시 [docs/rules/GIT_COLLABORATION_RULES.md](rules/GIT_COLLABORATION_RULES.md)를 우선한다.
+9. Spring Boot 초기 생성/버전/의존성 기준 충돌 시 [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md)를 우선한다.
 
 ---
 
@@ -77,6 +79,7 @@
 - [ ] 세션/토큰/보안 헤더 정책 변경 시 [docs/security/SECURITY_BASELINE.md](security/SECURITY_BASELINE.md) 반영
 - [ ] 테스트 범위/게이트 변경 시 [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md) 반영
 - [ ] PR 작성 시 [docs/rules/PR_CHECKLIST.md](rules/PR_CHECKLIST.md) 항목 점검
+- [ ] external/internal API 생성 기준 변경 시 [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md) 반영
 
 ---
 
@@ -87,3 +90,4 @@
 - 2026-04-16: 협업 Git 규칙 및 PR 체크리스트 문서 정본 세트 추가
 - 2026-04-16: 보안 운영 기준 문서 정본 세트 추가
 - 2026-04-16: 테스트 전략 문서 정본 세트 추가
+- 2026-04-17: Spring Boot 공통 부트스트랩 규칙 문서 정본 세트 추가

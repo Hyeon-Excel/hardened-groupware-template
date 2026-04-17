@@ -166,6 +166,7 @@ hardened-groupware-template/
 - [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md): 용어/네이밍 표준
 - [docs/rules/GIT_COLLABORATION_RULES.md](docs/rules/GIT_COLLABORATION_RULES.md): 협업 브랜치/커밋/병합 기준
 - [docs/rules/PR_CHECKLIST.md](docs/rules/PR_CHECKLIST.md): PR 품질 게이트 체크리스트
+- [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md): external/internal API 공통 Spring Boot 생성 기준
 - [docs/security/SECURITY_BASELINE.md](docs/security/SECURITY_BASELINE.md): 세션/토큰/보안 헤더 기준
 - [docs/testing/TEST_STRATEGY.md](docs/testing/TEST_STRATEGY.md): 테스트 범위/비율/게이트 기준
 - [docs/archive/README.md](docs/archive/README.md): 구버전 문서 보관 규칙
@@ -221,6 +222,7 @@ hardened-groupware-template/
    - `docs/rules/GIT_COLLABORATION_RULES.md`
    - `docs/rules/PR_CHECKLIST.md`
    - `docs/rules/ACCOUNT_SEPARATION_DRAFT.md` (편집중 초안)
+   - `docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md`
 
 12. 보안 운영 기준
 
