@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: external-api
+  jackson:
+    time-zone: Asia/Seoul
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

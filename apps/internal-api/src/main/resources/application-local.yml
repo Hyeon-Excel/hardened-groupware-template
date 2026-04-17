@@ -1,0 +1,14 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mariadb://localhost:3306/internal_db
+    username: ${INTERNAL_DB_USERNAME:internal_user}
+    password: ${INTERNAL_DB_PASSWORD:internal_pass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
