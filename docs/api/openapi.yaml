@@ -2,6 +2,9 @@ openapi: 3.1.0
 info:
   title: hardened-groupware-template API
   version: 0.1.0
+  license:
+    name: UNLICENSED
+    url: https://example.org/licenses/unlicensed
   summary: External / Internal / External Internal API contract
   description: |
     hardened-groupware-template의 API 명세 초안.
@@ -9,34 +12,55 @@ info:
     - Internal Groupware API
     - External Admin Internal API
     - Session/Cookie auth + CSRF
-    - Async file scan flow
+    - File security state flow
 
 servers:
-  - url: http://localhost:8080
-    description: Local external-api
-  - url: http://localhost:8081
-    description: Local internal-api
+  - url: https://external-api.hgt.local
+    description: External API base URL
+  - url: https://internal-api.hgt.local
+    description: Internal API base URL
+
+security: []
 
 tags:
   - name: External Auth
+    description: 공개 사용자 인증 관련 API
   - name: External CSRF
+    description: 공개 서비스 CSRF 토큰 API
   - name: External News
+    description: 공개 뉴스 조회 API
   - name: External Notices
+    description: 공개 공지 조회 API
   - name: External Resources
+    description: 공개 자료 조회/다운로드 API
   - name: External Support
+    description: 공개 고객 문의 API
   - name: External Me
+    description: 공개 사용자 마이페이지 API
   - name: External Careers
+    description: 공개 채용 및 지원 API
   - name: External Files
+    description: 공개 서비스 파일 상태 조회 API
   - name: Internal Auth
+    description: 내부 사용자 인증 API
   - name: Internal CSRF
+    description: 내부 서비스 CSRF 토큰 API
   - name: Internal Notices
+    description: 내부 공지 API
   - name: Internal Employees
+    description: 내부 사원 디렉토리 API
   - name: Internal Approvals
+    description: 내부 전자결재 API
   - name: Internal Applicants
+    description: 내부 지원자 검토 API
   - name: Internal Support
+    description: 내부 고객 문의 처리 API
   - name: Internal Admin
+    description: 내부 관리자 운영 API
   - name: Internal Files
+    description: 내부 서비스 파일 상태 조회 API
   - name: External Internal Admin
+    description: internal-api가 호출하는 external-api 내부 관리 API
 
 paths:
   /api/external/csrf:
@@ -52,6 +76,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CsrfTokenResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/auth/signup:
     post:
       tags: [External Auth]
@@ -117,6 +143,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/auth/password-reset/request:
     post:
       tags: [External Auth]
@@ -159,6 +187,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/news:
     get:
       tags: [External News]
@@ -177,6 +207,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalNewsListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/news/{newsId}:
     get:
       tags: [External News]
@@ -212,6 +244,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalNoticeListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/notices/{noticeId}:
     get:
       tags: [External Notices]
@@ -273,12 +307,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalSupportTicketListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/support-tickets/{ticketId}:
     get:
       tags: [External Support]
       summary: 내 문의 상세 조회
       operationId: getMySupportTicketDetail
-      description: 본인 소유 리소스가 아니면 404를 반환해 리소스 존재 여부를 숨긴다.
+      description: v0에서는 소유권 불일치 시 403 또는 404가 반환될 수 있으며, v1 운영 기준은 404를 반환해 리소스 존재 여부를 숨긴다.
       security:
         - ExternalSessionAuth: []
       parameters:
@@ -290,6 +326,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExternalSupportTicketDetailResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
         "404":
           $ref: "#/components/responses/NotFoundResponse"
 
@@ -311,6 +349,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalResourceListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/resources/{resourceId}:
     get:
       tags: [External Resources]
@@ -362,6 +402,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CareerPostListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/careers/{careerId}:
     get:
       tags: [External Careers]
@@ -420,11 +462,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/CareerApplicationListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/files/{fileId}/status:
     get:
       tags: [External Files]
       summary: 공개 서비스 파일 상태 조회
       operationId: getExternalFileStatus
+      description: v0에서는 소유권 불일치 시 403 또는 404가 반환될 수 있으며, v1 운영 기준은 404를 반환한다.
       security:
         - ExternalSessionAuth: []
       parameters:
@@ -436,6 +481,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FileStatusResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
         "404":
           $ref: "#/components/responses/NotFoundResponse"
 
@@ -453,6 +500,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExternalMeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
     patch:
       tags: [External Me]
       summary: 내 정보 수정
@@ -496,6 +545,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalDownloadHistoryListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/csrf:
     get:
       tags: [Internal CSRF]
@@ -509,6 +560,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CsrfTokenResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/auth/login:
     post:
       tags: [Internal Auth]
@@ -552,6 +605,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/auth/me:
     get:
       tags: [Internal Auth]
@@ -567,6 +622,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalSessionResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/notices:
     get:
       tags: [Internal Notices]
@@ -584,6 +641,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InternalNoticeListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
     post:
       tags: [Internal Notices]
       summary: 사내 공지 생성
@@ -605,6 +664,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalNoticeDetailResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/notices/{noticeId}:
     get:
       tags: [Internal Notices]
@@ -645,6 +706,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InternalNoticeDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
     delete:
       tags: [Internal Notices]
       summary: 사내 공지 삭제
@@ -662,6 +725,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/employees:
     get:
       tags: [Internal Employees]
@@ -681,6 +746,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/EmployeeListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/employees/{employeeId}:
     get:
       tags: [Internal Employees]
@@ -714,6 +781,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApprovalListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
     post:
       tags: [Internal Approvals]
       summary: 전자결재 생성
@@ -735,6 +804,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApprovalDetailResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/approvals/{approvalId}:
     get:
       tags: [Internal Approvals]
@@ -778,6 +849,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/approvals/{approvalId}/reject:
     patch:
       tags: [Internal Approvals]
@@ -802,6 +875,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/applicants:
     get:
       tags: [Internal Applicants]
@@ -820,6 +895,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalApplicantListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/applicants/{applicationId}:
     get:
       tags: [Internal Applicants]
@@ -837,6 +914,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApplicantDetailResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/applicants/{applicationId}/status:
     patch:
       tags: [Internal Applicants]
@@ -861,6 +940,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/applicants/{applicationId}/notes:
     post:
       tags: [Internal Applicants]
@@ -885,6 +966,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/support-tickets:
     get:
       tags: [Internal Support]
@@ -903,6 +986,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalSupportTicketListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/support-tickets/{ticketId}:
     get:
       tags: [Internal Support]
@@ -946,6 +1031,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/support-tickets/{ticketId}/reply:
     post:
       tags: [Internal Support]
@@ -970,6 +1057,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/admin/dashboard:
     get:
       tags: [Internal Admin]
@@ -985,6 +1074,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalAdminDashboardResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/admin/audit-logs:
     get:
       tags: [Internal Admin]
@@ -1003,6 +1094,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/InternalAuditLogListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/admin/external-users:
     get:
       tags: [Internal Admin]
@@ -1021,6 +1114,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalUserListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/admin/external-resources:
     get:
       tags: [Internal Admin]
@@ -1039,11 +1134,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalInternalResourceListResponse"
 
-  /api/internal/admin/quarantine-logs:
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+  /api/internal/admin/file-security-logs:
     get:
       tags: [Internal Admin]
-      summary: 파일 검역 로그 목록 조회
-      operationId: getInternalAdminQuarantineLogs
+      summary: 파일 보안 로그 목록 조회
+      operationId: getInternalAdminFileSecurityLogs
       security:
         - InternalSessionAuth: []
       parameters:
@@ -1051,12 +1148,14 @@ paths:
         - $ref: "#/components/parameters/SizeParam"
       responses:
         "200":
-          description: 파일 검역 로그 조회 성공
+          description: 파일 보안 로그 조회 성공
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InternalAdminQuarantineLogListResponse"
+                $ref: "#/components/schemas/InternalAdminFileSecurityLogListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/internal/files/{fileId}/status:
     get:
       tags: [Internal Files]
@@ -1074,6 +1173,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/FileStatusResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/users:
     get:
       tags: [External Internal Admin]
@@ -1089,6 +1190,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalUserListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/users/{userId}:
     get:
       tags: [External Internal Admin]
@@ -1126,6 +1229,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalInternalResourceListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/resources/{resourceId}/publish:
     patch:
       tags: [External Internal Admin]
@@ -1143,6 +1248,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/resources/{resourceId}/archive:
     patch:
       tags: [External Internal Admin]
@@ -1160,6 +1267,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/resources/{resourceId}:
     delete:
       tags: [External Internal Admin]
@@ -1177,6 +1286,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/support-tickets:
     get:
       tags: [External Internal Admin]
@@ -1195,6 +1306,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExternalInternalSupportTicketListResponse"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/support-tickets/{ticketId}/status:
     patch:
       tags: [External Internal Admin]
@@ -1218,6 +1331,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/users/{userId}/deactivate:
     patch:
       tags: [External Internal Admin]
@@ -1235,6 +1350,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/users/{userId}/activate:
     patch:
       tags: [External Internal Admin]
@@ -1252,6 +1369,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
   /api/external/internal/users/{userId}/password-reset:
     post:
       tags: [External Internal Admin]
@@ -1269,6 +1388,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiResponseVoid"
 
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
 components:
   securitySchemes:
     ExternalSessionAuth:
@@ -1387,7 +1508,8 @@ components:
       name: fileId
       required: true
       schema:
-        type: string
+        type: integer
+        format: int64
 
     ApplicationIdParam:
       in: path
@@ -1730,19 +1852,33 @@ components:
           properties:
             data:
               type: object
+              required: [ticketId]
               properties:
                 ticketId:
                   type: integer
                   format: int64
                 fileId:
-                  type: string
-                  nullable: true
-                jobId:
-                  type: string
-                  nullable: true
+                  type: [integer, "null"]
+                  format: int64
+                  description: |
+                    첨부파일이 없으면 null.
                 status:
-                  type: string
-                  enum: [PENDING, SCANNING]
+                  type: [string, "null"]
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+                  description: |
+                    첨부파일이 없으면 null.
+                    v0 기준선에서 첨부가 있는 경우 "APPROVED"로 고정(V0_SCAN_DISABLED).
+                    v1에서는 초기값 "PENDING"이며 상태 조회 API로 전이 확인.
+                scanResultCode:
+                  type: [string, "null"]
+                  description: |
+                    첨부파일이 없으면 null.
+                    v0 기준선에서 첨부가 있는 경우 "V0_SCAN_DISABLED" 고정.
+                scannedAt:
+                  type: [string, "null"]
+                  format: date-time
+                  description: |
+                    첨부파일이 없거나 아직 스캔 완료 전이면 null.
 
     ExternalSupportTicketListItem:
       type: object
@@ -1759,12 +1895,14 @@ components:
           type: string
           enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
         fileId:
-          type: string
-          nullable: true
+          type: [integer, "null"]
+          format: int64
         fileStatus:
-          type: string
-          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
-          nullable: true
+          type: [string, "null"]
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+          description: |
+            첨부파일이 없으면 null.
+            v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
         createdAt:
           type: string
           format: date-time
@@ -1803,15 +1941,16 @@ components:
                   type: string
                   enum: [RECEIVED, REVIEWING, ANSWERED, CLOSED]
                 fileId:
-                  type: string
-                  nullable: true
+                  type: [integer, "null"]
+                  format: int64
                 fileStatus:
-                  type: string
-                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
-                  nullable: true
+                  type: [string, "null"]
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+                  description: |
+                    첨부파일이 없으면 null.
+                    v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
                 fileStatusReason:
-                  type: string
-                  nullable: true
+                  type: [string, "null"]
                 createdAt:
                   type: string
                   format: date-time
@@ -1830,7 +1969,8 @@ components:
         description:
           type: string
         fileId:
-          type: string
+          type: integer
+          format: int64
         createdAt:
           type: string
           format: date-time
@@ -1866,7 +2006,8 @@ components:
                 description:
                   type: string
                 fileId:
-                  type: string
+                  type: integer
+                  format: int64
                 createdAt:
                   type: string
                   format: date-time
@@ -1885,9 +2026,8 @@ components:
           type: string
           enum: [OPEN, CLOSED]
         deadline:
-          type: string
+          type: [string, "null"]
           format: date-time
-          nullable: true
 
     CareerPostListResponse:
       allOf:
@@ -1946,15 +2086,19 @@ components:
           properties:
             data:
               type: object
-              required: [fileId, jobId, status]
+              required: [fileId, status]
               properties:
                 fileId:
-                  type: string
-                jobId:
-                  type: string
+                  type: integer
+                  format: int64
                 status:
                   type: string
-                  enum: [PENDING, SCANNING]
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED]
+                scanResultCode:
+                  type: [string, "null"]
+                scannedAt:
+                  type: [string, "null"]
+                  format: date-time
 
     CareerApplicationItem:
       type: object
@@ -1971,12 +2115,14 @@ components:
           type: string
           enum: [SUBMITTED, REVIEWING, PASSED, REJECTED]
         fileId:
-          type: string
-          nullable: true
+          type: [integer, "null"]
+          format: int64
         fileStatus:
-          type: string
-          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
-          nullable: true
+          type: [string, "null"]
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+          description: |
+            지원서 첨부파일(이력서 등)이 없으면 null.
+            v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
         appliedAt:
           type: string
           format: date-time
@@ -2003,18 +2149,21 @@ components:
           properties:
             data:
               type: object
-              required: [fileId, jobId, status]
+              required: [fileId, status]
               properties:
                 fileId:
-                  type: string
-                jobId:
-                  type: string
+                  type: integer
+                  format: int64
                 status:
                   type: string
-                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED]
+                scanResultCode:
+                  type: [string, "null"]
+                scannedAt:
+                  type: [string, "null"]
+                  format: date-time
                 reason:
-                  type: string
-                  nullable: true
+                  type: [string, "null"]
 
     InternalNoticeCreateRequest:
       type: object
@@ -2216,12 +2365,10 @@ components:
                 requesterName:
                   type: string
                 approverId:
-                  type: integer
+                  type: [integer, "null"]
                   format: int64
-                  nullable: true
                 approverName:
-                  type: string
-                  nullable: true
+                  type: [string, "null"]
                 createdAt:
                   type: string
                   format: date-time
@@ -2247,7 +2394,7 @@ components:
           type: string
         status:
           type: string
-          enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+          enum: [SUBMITTED, REVIEWING, PASSED, REJECTED]
         submittedAt:
           type: string
           format: date-time
@@ -2295,14 +2442,16 @@ components:
                   type: string
                 status:
                   type: string
-                  enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+                  enum: [SUBMITTED, REVIEWING, PASSED, REJECTED]
                 fileId:
-                  type: string
-                  nullable: true
+                  type: [integer, "null"]
+                  format: int64
                 fileStatus:
-                  type: string
-                  enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
-                  nullable: true
+                  type: [string, "null"]
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+                  description: |
+                    첨부파일이 없으면 null.
+                    v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
                 submittedAt:
                   type: string
                   format: date-time
@@ -2316,7 +2465,7 @@ components:
       properties:
         status:
           type: string
-          enum: [RECEIVED, REVIEWING, PASSED, REJECTED]
+          enum: [SUBMITTED, REVIEWING, PASSED, REJECTED]
 
     ApplicantNoteCreateRequest:
       type: object
@@ -2388,12 +2537,14 @@ components:
                     content:
                       type: string
                     fileId:
-                      type: string
-                      nullable: true
+                      type: [integer, "null"]
+                      format: int64
                     fileStatus:
-                      type: string
-                      enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
-                      nullable: true
+                      type: [string, "null"]
+                      enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED, null]
+                      description: |
+                        첨부파일이 없으면 null.
+                        v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
                     updatedAt:
                       type: string
                       format: date-time
@@ -2412,7 +2563,7 @@ components:
                   type: integer
                 applicantsInReview:
                   type: integer
-                quarantinedFiles:
+                filesPendingSecurityReview:
                   type: integer
 
     InternalAuditLogItem:
@@ -2451,14 +2602,15 @@ components:
                 page:
                   $ref: "#/components/schemas/PageMeta"
 
-    InternalAdminQuarantineLogItem:
+    InternalAdminFileSecurityLogItem:
       type: object
       properties:
-        jobId:
+        logId:
           type: integer
           format: int64
         fileId:
-          type: string
+          type: integer
+          format: int64
         sourceType:
           type: string
           enum: [CAREER_APPLICATION, SUPPORT_TICKET, RESOURCE_UPLOAD, OTHER]
@@ -2467,15 +2619,16 @@ components:
           format: int64
         status:
           type: string
-          enum: [PENDING, SCANNING, APPROVED, REJECTED, QUARANTINED]
+          enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED]
+        scanResultCode:
+          type: [string, "null"]
         reason:
-          type: string
-          nullable: true
+          type: [string, "null"]
         updatedAt:
           type: string
           format: date-time
 
-    InternalAdminQuarantineLogListResponse:
+    InternalAdminFileSecurityLogListResponse:
       allOf:
         - $ref: "#/components/schemas/ApiResponseBase"
         - type: object
@@ -2486,7 +2639,7 @@ components:
                 items:
                   type: array
                   items:
-                    $ref: "#/components/schemas/InternalAdminQuarantineLogItem"
+                    $ref: "#/components/schemas/InternalAdminFileSecurityLogItem"
                 page:
                   $ref: "#/components/schemas/PageMeta"
 
@@ -2521,9 +2674,8 @@ components:
                 - type: object
                   properties:
                     lastLoginAt:
-                      type: string
+                      type: [string, "null"]
                       format: date-time
-                      nullable: true
 
     ExternalInternalResourceItem:
       type: object

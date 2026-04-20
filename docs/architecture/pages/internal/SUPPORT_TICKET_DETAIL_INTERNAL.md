@@ -13,7 +13,7 @@
 - 고객 문의 상세 내용 확인
 - 문의 상태 변경
 - 내부 답변 등록
-- 첨부파일 검역 상태 확인
+- 첨부파일 보안 검사 상태 확인
 
 ---
 
@@ -60,14 +60,14 @@
 
 ## 6. 상태 모델
 
-```ts
-type TicketStatus = "RECEIVED" | "REVIEWING" | "ANSWERED" | "CLOSED";
+```js
+const ticketStatuses = ["RECEIVED", "REVIEWING", "ANSWERED", "CLOSED"];
 
-type SupportTicketDetailState = {
-  loading: boolean;
-  savingStatus: boolean;
-  savingReply: boolean;
-  error: string | null;
+const supportTicketDetailState = {
+  loading: false,
+  savingStatus: false,
+  savingReply: false,
+  error: null,
 };
 ```
 

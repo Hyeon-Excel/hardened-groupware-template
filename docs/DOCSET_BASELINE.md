@@ -2,11 +2,11 @@
 
 ## 1. 목적
 
-이 문서는 본 저장소의 문서 정본(Source of Truth) 기준을 고정한다.
+이 문서는 본 저장소의 문서 정본(SoT) 기준을 고정한다.
 
 목표:
 
-- 팀원마다 다른 문서를 참조하는 문제 방지
+- 참여자마다 다른 문서를 참조하는 문제 방지
 - 기획/아키텍처/API/화면 명세의 단일 기준 고정
 - 중복 문서 발생 시 아카이브 절차 표준화
 
@@ -55,6 +55,17 @@
 
 ---
 
+## 3.1 중복 최소화 규칙
+
+문서 가독성을 위해 동일 내용을 여러 문서에 반복 서술하지 않는다.
+
+1. 공통 정책 전문은 1개 정본 문서에만 유지한다.
+2. 다른 문서에서는 2~3줄 요약 + 정본 링크만 남긴다.
+3. 페이지 상세 문서는 "해당 페이지에서만 달라지는 정보"만 포함한다.
+4. 정본 변경 시 파생 문서는 문구 동기화보다 링크 정합성 확인을 우선한다.
+
+---
+
 ## 4. 버전 및 아카이브 정책
 
 중복/구버전 문서가 발생하면 아래 절차를 따른다.
@@ -78,6 +89,7 @@
 - [ ] 용어 신규 추가 시 [docs/TERMINOLOGY.md](TERMINOLOGY.md) 반영
 - [ ] 세션/토큰/보안 헤더 정책 변경 시 [docs/security/SECURITY_BASELINE.md](security/SECURITY_BASELINE.md) 반영
 - [ ] 테스트 범위/게이트 변경 시 [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md) 반영
+- [ ] 공통 내용은 복붙하지 않고 정본 링크 참조로 처리했는지 확인
 - [ ] PR 작성 시 [docs/rules/PR_CHECKLIST.md](rules/PR_CHECKLIST.md) 항목 점검
 - [ ] external/internal API 생성 기준 변경 시 [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md) 반영
 
@@ -91,3 +103,5 @@
 - 2026-04-16: 보안 운영 기준 문서 정본 세트 추가
 - 2026-04-16: 테스트 전략 문서 정본 세트 추가
 - 2026-04-17: Spring Boot 공통 부트스트랩 규칙 문서 정본 세트 추가
+- 2026-04-20: 프로젝트 주제 회귀(모의해킹·취약점 분석 중심)와 파일 처리 모델 재정의(단일 오브젝트 스토리지 + 상태 머신)에 따라 PLANNING.md 재작성, 구버전은 `docs/archive/PLANNING_2026-04-20_pre-pentest-pivot.md`로 이동
+- 2026-04-20: 문서 중복 최소화 규칙(정본 링크 우선, 페이지 문서 고유 정보 중심) 추가

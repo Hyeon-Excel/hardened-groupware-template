@@ -129,7 +129,7 @@
 대표 예:
 
 - 파일 업로드 접수
-- 파일 검역 작업 등록
+- 파일 보안 처리 상태 등록
 - 후처리 작업 큐 등록
 
 즉, 요청이 접수되었더라도 최종 완료를 의미하지 않을 수 있다.
@@ -308,12 +308,22 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 ### 6.1 리소스 소유권(IDOR) 응답 정책
 
-공개 사용자 소유 리소스 조회 API에서 소유권이 맞지 않으면 `403` 대신 `404`를 반환한다.
+공개 사용자 소유 리소스 조회 API의 소유권 불일치 응답은 v0/v1 기준선을 분리해 관리한다.
+
+| 구분 | 소유권 불일치 기본 응답 | 비고 |
+| --- | --- | --- |
+| v0 | `403` 또는 `404` (구현/프레임워크 기본 처리에 따라 달라질 수 있음) | 분석 페이즈 관찰 대상 |
+| v1 | `404` 고정 | 리소스 존재 여부 노출 최소화 |
 
 적용 이유:
 
 - 리소스 존재 여부 자체를 외부 사용자에게 노출하지 않기 위함
 - IDOR/BOLA 탐색 가능성 축소
+
+OpenAPI 계약 규칙:
+
+- phase 차이를 반영하기 위해 `403`/`404`를 모두 명시할 수 있다.
+- v1 운영 기준과 보안 목표값은 `404`를 기본으로 적용한다.
 
 대표 적용 대상:
 
@@ -352,7 +362,7 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 주의:
 
-- `GET /api/external/support-tickets/{ticketId}`는 본인 소유가 아닌 리소스 접근 시 `404`를 반환한다.
+- `GET /api/external/support-tickets/{ticketId}`는 소유권 불일치 시 v0에서 `403` 또는 `404`가 가능하고, v1 운영 기준은 `404`다.
 
 ---
 
@@ -383,6 +393,7 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 - 내 지원 내역 조회의 canonical 경로는 `GET /api/external/careers/applications/me`를 사용한다.
 - `/api/external/me/applications` 경로는 중복 의미 alias이므로 신규 사용을 중지한다.
+- OpenAPI 계약에는 현재 canonical 경로만 노출하며, alias 경로는 포함하지 않는다.
 
 ---
 
@@ -448,7 +459,7 @@ CSRF 토큰 발급/조회 엔드포인트:
 - `GET /api/internal/admin/audit-logs`
 - `GET /api/internal/admin/external-users`
 - `GET /api/internal/admin/external-resources`
-- `GET /api/internal/admin/quarantine-logs`
+- `GET /api/internal/admin/file-security-logs`
 
 주의:
 
@@ -499,11 +510,14 @@ CSRF 토큰 발급/조회 엔드포인트:
 업로드 처리 원칙:
 
 1. `external-api`가 업로드 수신
-2. 파일을 `quarantine_storage`에 저장
-3. `file_scan_jobs` 작업 생성
-4. `file-worker`가 후속 검사 수행
+2. 파일 바이트를 단일 오브젝트 스토리지에 저장
+3. owner DB의 `uploaded_file`에 상태를 기록
+4. 상태 전이/게이트 상세는 [ARCHITECTURE.md](../architecture/ARCHITECTURE.md) 섹션 5 정본을 따른다.
 
-즉, 업로드 성공 응답은 **최종 승인**이 아니라 **업로드 접수 성공**일 수 있다.
+정책 정합성:
+
+- `uploaded_file` 컬럼/인덱스 정본: [database/README.md](../../database/README.md) 섹션 1.1
+- v0/v1 운영 기준선: [SECURITY_BASELINE.md](../security/SECURITY_BASELINE.md) 섹션 7
 
 권장 상태 코드:
 
@@ -515,11 +529,11 @@ CSRF 토큰 발급/조회 엔드포인트:
 {
   "success": true,
   "code": "FILE_UPLOAD_ACCEPTED",
-  "message": "파일 업로드가 접수되었습니다. 검역 결과를 기다려주세요.",
+  "message": "파일 업로드가 접수되었습니다.",
   "data": {
-    "fileId": "file_12345",
-    "jobId": "job_67890",
-    "status": "PENDING"
+    "fileId": 12345,
+    "status": "APPROVED",
+    "scanResultCode": "V0_SCAN_DISABLED"
   },
   "timestamp": "2026-04-15T12:00:00Z"
 }
@@ -529,7 +543,7 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 ## 10.2 파일 상태 확인 API
 
-비동기 검역을 사용하는 모든 업로드 파일은 상태 확인 API를 통해 현재 처리 상태를 조회할 수 있어야 한다.
+모든 업로드 파일은 상태 확인 API로 현재 처리 상태를 조회할 수 있어야 한다.
 
 공개 사용자용:
 
@@ -539,13 +553,17 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 - `GET /api/internal/files/{fileId}/status`
 
+식별자 규칙:
+
+- `fileId`는 `uploaded_file.id`에 대응하는 `int64` 값이다.
+
 상태값 예시:
 
 - `PENDING`
 - `SCANNING`
 - `APPROVED`
 - `REJECTED`
-- `QUARANTINED`
+- `FAILED`
 
 응답 예시:
 
@@ -555,10 +573,11 @@ CSRF 토큰 발급/조회 엔드포인트:
   "code": "FILE_STATUS_OK",
   "message": "파일 상태 조회에 성공했습니다.",
   "data": {
-    "fileId": "file_12345",
-    "jobId": "job_67890",
+    "fileId": 12345,
     "status": "APPROVED",
-    "reason": null
+    "scanResultCode": "V0_SCAN_DISABLED",
+    "reason": null,
+    "scannedAt": null
   },
   "timestamp": "2026-04-15T12:00:00Z"
 }
@@ -572,9 +591,9 @@ CSRF 토큰 발급/조회 엔드포인트:
   "code": "FILE_STATUS_OK",
   "message": "파일 상태 조회에 성공했습니다.",
   "data": {
-    "fileId": "file_12345",
-    "jobId": "job_67890",
-    "status": "REJECTED",
+    "fileId": 12345,
+    "status": "FAILED",
+    "scanResultCode": "SCAN_ENGINE_TIMEOUT",
     "reason": "FILE_POLICY_VIOLATION"
   },
   "timestamp": "2026-04-15T12:00:00Z"
@@ -585,20 +604,24 @@ CSRF 토큰 발급/조회 엔드포인트:
 
 ## 10.3 다운로드 규칙
 
-다운로드는 승인 저장소의 파일만 제공한다.
+다운로드는 owner API 게이트를 통해 `APPROVED` 상태 파일만 제공한다.
 
 예:
 
 - `GET /api/external/resources/{resourceId}/download`
 
-다운로드 대상:
+허용:
 
-- `approved_external_storage`에 존재하는 파일만 허용
+- `scan_status=APPROVED`
 
-금지:
+기본 거부(fail-closed):
 
-- `quarantine_storage` 직접 다운로드
-- `internal_review_storage` 외부 공개
+- `PENDING`, `SCANNING`, `REJECTED`, `FAILED`
+
+보안 원칙:
+
+- 오브젝트 스토리지 직접 접근 금지
+- presigned URL을 사용할 경우 owner API가 발급/검증 주체여야 함
 
 ---
 
@@ -729,6 +752,6 @@ CSRF 토큰 발급/조회 엔드포인트:
 2. 인증은 **세션 기반 사용자 인증**과 **서비스 간 인증**을 분리한다.
 3. 모든 상태 변경 요청은 **CSRF 토큰 검증**을 전제로 한다.
 4. 내부 그룹웨어는 공개 데이터를 직접 수정하지 않고, `external-api`의 내부 관리 인터페이스를 호출한다.
-5. 파일 업로드는 검역 저장소와 비동기 검사 흐름을 전제로 하며, 상태 조회 API를 제공한다.
+5. 파일 업로드는 `uploaded_file` 상태 머신을 전제로 하며, 상태 조회 API를 제공한다.
 6. 공개 API에는 **429 Too Many Requests**를 포함한 호출 제한 정책을 반영한다.
 7. 모든 구현은 OpenAPI 계약을 먼저 고정한 뒤 진행한다.

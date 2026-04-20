@@ -17,7 +17,7 @@
 - 페이지별 필요한 API 범위
 - MVP 우선순위
 - 에러 대응 화면 구조
-- 검역/차단 상태를 확인할 관리자 화면 구조
+- 파일 보안 상태/차단 상태를 확인할 관리자 화면 구조
 
 ---
 
@@ -42,8 +42,8 @@
 ### 2.4 MVP 우선순위를 먼저 정한다
 
 - 모든 페이지를 처음부터 완성하지 않는다.
-- Phase 2까지 필요한 MVP 화면을 먼저 구현한다.
-- 이후 관리자 편의성, 상세 통계, 부가 기능은 후순위로 둔다.
+- MVP는 external 화면을 우선으로 Phase 1에 확보하고, Phase 2 분석에 필요한 internal 최소 화면만 병행한다.
+- 이후 internal 상세 업무 화면, 관리자 편의성, 통계/부가 기능은 Phase 3 이후로 둔다.
 
 ### 2.5 페이지 설계는 API 설계보다 먼저 고정한다
 
@@ -52,7 +52,7 @@
 
 ### 2.6 보안 상태는 화면에서도 증명 가능해야 한다
 
-- 검역, 차단, 상태 변경, 접근 거부 같은 보안 동작은 관리자 또는 사용자 화면에서 확인 가능해야 한다.
+- 파일 보안 검사 결과, 차단, 상태 변경, 접근 거부 같은 보안 동작은 관리자 또는 사용자 화면에서 확인 가능해야 한다.
 - 따라서 보안 기능은 백엔드 로직만이 아니라 **모니터링/상태 표시 페이지**까지 포함해 설계한다.
 
 ---
@@ -69,6 +69,9 @@
 ---
 
 ## 4. 공개 웹 서비스 페이지 구조
+
+상세 페이지 본문 정본은 [PAGE_SPECS_EXTERNAL.md](PAGE_SPECS_EXTERNAL.md) 인덱스와 각 상세 문서에서 관리한다.
+본 문서는 전체 구조/권한 경계/라우트 관점만 유지한다.
 
 ## 4.1 공개 웹 전체 라우트 개요
 
@@ -170,24 +173,8 @@
 
 ## 4.4 공개 웹 MVP 페이지
 
-초기 구현 우선 대상은 아래 페이지로 한정한다.
-
-- `/`
-- `/login`
-- `/signup`
-- `/news`
-- `/news/:newsId`
-- `/notices`
-- `/resources`
-- `/support/new`
-- `/support/me`
-- `/careers`
-- `/careers/:careerId`
-- `/careers/:careerId/apply`
-- `/mypage`
-- `/mypage/applications`
-- `/403`
-- `/404`
+MVP 대상 라우트는 섹션 4.3 표에서 `우선순위 = MVP` 행을 정본으로 사용한다.
+상세 명세 작성 상태는 [PAGE_SPECS_EXTERNAL.md](PAGE_SPECS_EXTERNAL.md) 섹션 4를 참조한다.
 
 ---
 
@@ -214,7 +201,7 @@
 ├─ /internal/admin/external-users
 ├─ /internal/admin/external-users/:userId
 ├─ /internal/admin/external-resources
-├─ /internal/admin/quarantine-logs
+├─ /internal/admin/file-security-logs
 ├─ /internal/admin/audit-logs
 ├─ /internal/403
 ├─ /internal/404
@@ -233,7 +220,7 @@
 - 현재 로그인 사용자 정보
 - 권한별 메뉴 제어
 - 공통 테이블 / 검색 / 필터 / 상태 배지
-- 검역 상태 / 차단 상태 배지 표시 가능 구조
+- 파일 상태 / 차단 상태 배지 표시 가능 구조
 - 공통 에러 페이지 라우팅
 
 ### Sidebar 기본 메뉴
@@ -250,7 +237,7 @@
 
 - 공개 사용자 관리
 - 공개 자료 관리
-- 파일 검역 로그
+- 파일 보안 이벤트 로그
 - 감사 로그
 
 ---
@@ -273,10 +260,10 @@
 | `/internal/support-tickets`            | 문의 목록        | 고객 문의 처리                | 예        | MANAGER 이상  | 문의 목록                                  | 상세 이동, 상태 필터     | MVP      |
 | `/internal/support-tickets/:ticketId`  | 문의 상세        | 문의 내용 및 첨부 검토        | 예        | MANAGER 이상  | 문의 상세, 첨부 상태                       | 상태 변경, 답변 등록     | MVP      |
 | `/internal/admin`                      | 관리자 홈        | 관리자 기능 진입              | 예        | ADMIN         | 운영 요약 정보                             | 하위 메뉴 이동           | 추천     |
-| `/internal/admin/external-users`         | 공개 사용자 목록 | 공개 사용자 조회              | 예        | ADMIN         | 공개 사용자 목록                           | 상세 이동                | MVP      |
-| `/internal/admin/external-users/:userId` | 공개 사용자 상세 | 공개 사용자 관리              | 예        | ADMIN         | 공개 사용자 상세                           | 활성/비활성, 초기화 요청 | MVP      |
+| `/internal/admin/external-users`         | 공개 사용자 목록 | 공개 사용자 조회              | 예        | ADMIN         | 공개 사용자 목록                           | 상세 이동                | 추천     |
+| `/internal/admin/external-users/:userId` | 공개 사용자 상세 | 공개 사용자 관리              | 예        | ADMIN         | 공개 사용자 상세                           | 활성/비활성, 초기화 요청 | 추천     |
 | `/internal/admin/external-resources`     | 공개 자료 관리   | 공개 자료 상태 관리           | 예        | ADMIN         | 자료 목록                                  | publish/archive/delete   | 추천     |
-| `/internal/admin/quarantine-logs`      | 파일 검역 로그   | 파일 검역 및 차단 결과 시각화 | 예        | ADMIN         | 검역 로그, 파일 상태, 차단 사유            | 필터링, 상세 조회        | MVP      |
+| `/internal/admin/file-security-logs`      | 파일 보안 이벤트 로그 | 파일 보안 검사 및 차단 결과 시각화 | 예        | ADMIN         | 파일 상태 로그, 차단 사유                  | 필터링, 상세 조회        | 추천     |
 | `/internal/admin/audit-logs`           | 감사 로그        | 운영 이력 조회                | 예        | ADMIN         | 감사 로그 목록                             | 조회                     | 후순위   |
 | `/internal/403`                        | 접근 거부 페이지 | 내부 권한 부족 안내           | 아니오    | 없음          | 오류 메시지                                | 대시보드 이동            | MVP      |
 | `/internal/404`                        | 페이지 없음      | 내부 잘못된 경로 처리         | 아니오    | 없음          | 오류 메시지                                | 대시보드 이동            | MVP      |
@@ -285,15 +272,13 @@
 
 ---
 
-## 5.4 내부 그룹웨어 MVP 페이지
+## 5.4 내부 그룹웨어 최소 구현 페이지 (Phase 1~2)
 
-초기 구현 우선 대상은 아래 페이지로 한정한다.
+초기 분석 페이즈 진입을 위한 최소 구현 범위는 아래 페이지로 한정한다.
 
 - `/internal/login`
 - `/internal/dashboard`
 - `/internal/notices`
-- `/internal/notices/:noticeId`
-- `/internal/employees`
 - `/internal/approvals`
 - `/internal/approvals/new`
 - `/internal/approvals/:approvalId`
@@ -301,11 +286,10 @@
 - `/internal/applicants/:applicationId`
 - `/internal/support-tickets`
 - `/internal/support-tickets/:ticketId`
-- `/internal/admin/external-users`
-- `/internal/admin/external-users/:userId`
-- `/internal/admin/quarantine-logs`
 - `/internal/403`
 - `/internal/404`
+
+그 외 내부 상세 화면과 관리자 운영 화면은 Phase 3 이후에 확장한다.
 
 ---
 
@@ -320,7 +304,7 @@
 | 전자결재                       | -                 | 가능           | 가능    | 가능  |
 | 지원자 검토 / 고객 문의 대응   | -                 | 제한 또는 불가 | 가능    | 가능  |
 | 공개 사용자 관리               | -                 | 불가           | 불가    | 가능  |
-| 파일 검역 로그 확인            | -                 | 불가           | 불가    | 가능  |
+| 파일 보안 이벤트 로그 확인      | -                 | 불가           | 불가    | 가능  |
 | 감사 로그 / 운영 관리          | -                 | 불가           | 제한적  | 가능  |
 
 ---
@@ -349,7 +333,7 @@
 - `/internal/approvals` → `GET /api/internal/approvals`
 - `/internal/applicants/:applicationId` → `GET /api/internal/applicants/{applicationId}`
 - `/internal/admin/external-resources` → `GET /api/internal/admin/external-resources`
-- `/internal/admin/quarantine-logs` → `GET /api/internal/admin/quarantine-logs`
+- `/internal/admin/file-security-logs` → `GET /api/internal/admin/file-security-logs`
 
 ### 7.3 공개 데이터 관리
 
@@ -391,7 +375,7 @@
 - `ApprovalStatusBadge`
 - `ApplicantStatusBadge`
 - `SupportTicketStatusBadge`
-- `QuarantineStatusBadge`
+- `FileSecurityStatusBadge`
 - `AuditLogTable`
 - `ConfirmModal`
 - `ErrorFallback`
@@ -433,7 +417,7 @@
 - MVP 페이지별 화면 명세 작성
 - 페이지별 필요한 API 매핑
 - 공통 컴포넌트 목록 정리
-- 관리자 검역 로그 화면 설계
+- 관리자 파일 보안 이벤트 로그 화면 설계
 
 ### 10.3
 
@@ -454,7 +438,7 @@
 
 2. **공개 자료실 상세 페이지**
    - 제외한다.
-   - 자료 목록에서 클릭 시 승인 저장소의 파일을 바로 다운로드하는 구조로 간다.
+   - 자료 목록에서 클릭 시 owner API 게이트를 거쳐 다운로드하는 구조로 간다.
 
 3. **고객센터 구조**
    - 문의 등록 폼 중심으로 간다.
@@ -466,7 +450,7 @@
 
 5. **내부 그룹웨어 대시보드 통계**
    - 단순 카운트 카드만 제공한다.
-   - 예: 오늘 가입자 수, 결재 대기 건수, 검역 차단 건수
+   - 예: 오늘 가입자 수, 결재 대기 건수, 파일 차단 건수
 
 6. **관리자 페이지 구조**
    - 단일 페이지가 아니라 메뉴형으로 분리한다.
@@ -482,6 +466,14 @@
 3. 각 페이지는 목적, 권한, 데이터, 액션 기준으로 정의한다.
 4. 프론트엔드는 공개/내부 API를 직접 섞어 호출하지 않는다.
 5. 내부에서 공개 데이터를 다루는 경우에도 반드시 `internal-api`를 경유한다.
-6. 검역/차단 흐름은 관리자 화면에서 시각적으로 확인 가능해야 한다.
+6. 파일 보안 상태/차단 흐름은 관리자 화면에서 시각적으로 확인 가능해야 한다.
 7. 공통 에러 페이지를 통해 시스템 구조 노출을 줄이고 안전한 fallback UI를 제공한다.
 8. MVP 범위는 이미 확정된 결론을 기준으로 빠르게 구현한다.
+
+---
+
+## 13. 변경 이력
+
+- 2026-04-20: 파일 보안 이벤트 로그 경로/용어(`file-security-logs`)로 정리
+- 2026-04-20: 공개 웹 상세 명세 참조 원칙(PAGE_SPECS_EXTERNAL 연계) 추가
+- 2026-04-20: 중복 축소를 위해 섹션 4.4 MVP 목록을 섹션 4.3 표 기준 참조 방식으로 변경

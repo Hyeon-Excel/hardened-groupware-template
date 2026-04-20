@@ -13,7 +13,7 @@
 
 - 사용자가 자신이 등록한 문의 목록을 조회
 - 각 문의의 처리 상태를 확인
-- 첨부파일이 있는 경우 검역 상태를 확인
+- 첨부파일이 있는 경우 파일 보안 검사 상태를 확인
 - 문의 등록 페이지와 자연스럽게 연결
 - 향후 문의 상세 페이지 확장 기반 제공
 
@@ -57,7 +57,7 @@
 
 - 사용자가 본인의 문의 내역을 목록으로 확인
 - 각 문의의 처리 상태를 이해
-- 첨부파일이 검역 중인지, 승인되었는지, 처리 제한되었는지 확인
+- 첨부파일이 파일 보안 검사 중인지, 승인되었는지, 처리 제한되었는지 확인
 - 상세 화면이 없어도 목록 수준에서 핵심 상태를 충분히 이해할 수 있도록 제공
 
 ## 4.2 대표 사용자 시나리오
@@ -118,7 +118,7 @@ MVP에서는 단순 숫자 카드 2~3개 정도면 충분하다.
 | 문의 유형     | 계정/자료실/채용/기타 등  |
 | 등록일        | 문의 제출일               |
 | 문의 상태     | 현재 처리 상태            |
-| 첨부파일 상태 | 검역/승인 상태            |
+| 첨부파일 상태 | 파일 보안 검사/승인 상태            |
 | 비고          | 제한/격리 등 간단 메시지  |
 
 ### 목록 표시 방식
@@ -140,69 +140,31 @@ MVP는 **테이블형**이 적절하다.
 
 ---
 
-## 6.3 문의 상태 배지
+## 6.3 상태 배지
 
-### 상태 예시
+문의 상태/첨부파일 상태 enum과 사용자 표시 문구 정본은 [TERMINOLOGY.md](../../../TERMINOLOGY.md) 섹션 2.3을 따른다.
 
-- `RECEIVED`
-- `REVIEWING`
-- `ANSWERED`
-- `CLOSED`
+본 페이지 고유 규칙:
 
-### 사용자 표시 문구 예시
-
-| 상태        | 사용자 표시 문구 |
-| ----------- | ---------------- |
-| `RECEIVED`  | 접수됨           |
-| `REVIEWING` | 검토 중          |
-| `ANSWERED`  | 답변 완료        |
-| `CLOSED`    | 처리 종료        |
+- 한 행에서 `ticketStatus`와 `fileStatus`를 동시에 표시한다.
+- 공개 사용자에게 내부 탐지 상세 사유/시그니처/정책 내부값은 노출하지 않는다.
 
 ---
 
-## 6.4 첨부파일 상태 배지
-
-### 상태 예시
-
-- `PENDING`
-- `SCANNING`
-- `APPROVED`
-- `REJECTED`
-- `QUARANTINED`
-
-### 사용자 표시 문구 예시
-
-| 상태          | 사용자 표시 문구 |
-| ------------- | ---------------- |
-| `PENDING`     | 접수됨           |
-| `SCANNING`    | 검사 중          |
-| `APPROVED`    | 사용 가능        |
-| `REJECTED`    | 처리 제한        |
-| `QUARANTINED` | 격리됨           |
-
-주의:
-
-- 공개 사용자에게는 내부 탐지 상세 사유, 시그니처, 정책 내부값을 노출하지 않는다.
-- 공개 화면에서는 상태와 간단한 안내만 제공한다.
-
----
-
-## 6.5 상태 도움말 패널
+## 6.4 상태 도움말 패널
 
 목적:
 
 - 사용자가 배지 의미를 쉽게 이해하도록 보조
 
-예시 문구:
+작성 규칙:
 
-- “접수됨: 문의가 정상적으로 접수되었습니다.”
-- “검사 중: 첨부파일 보안 검사가 진행 중입니다.”
-- “사용 가능: 첨부파일 검사가 완료되었습니다.”
-- “처리 제한: 첨부파일이 정책에 따라 제한되었습니다.”
+- 도움말 문구는 섹션 6.3의 상태 라벨 기준을 재사용한다.
+- 페이지 문맥(문의 접수, 답변 확인)에 맞춘 짧은 설명만 덧붙인다.
 
 ---
 
-## 6.6 빈 상태(Empty State)
+## 6.5 빈 상태(Empty State)
 
 표시 조건:
 
@@ -223,37 +185,31 @@ MVP는 **테이블형**이 적절하다.
 
 ## 7.1 화면 상태(State)
 
-```ts id="n6f6cn"
-type MySupportTicketsPageState = {
-  loading: boolean;
-  items: SupportTicketListItem[];
-  error: string | null;
+```js id="n6f6cn"
+const mySupportTicketsPageState = {
+  loading: false,
+  items: [],
+  error: null,
   pagination: {
-    page: number;
-    size: number;
-    total: number;
-  };
+    page: 1,
+    size: 10,
+    total: 0,
+  },
 };
 ```
 
 ## 7.2 목록 아이템 타입 예시
 
-```ts id="r6d8vk"
-type SupportTicketListItem = {
-  ticketId: number;
-  title: string;
-  category?: "ACCOUNT" | "RESOURCE" | "CAREER" | "TECHNICAL" | "OTHER";
-  createdAt: string;
-  ticketStatus: "RECEIVED" | "REVIEWING" | "ANSWERED" | "CLOSED";
-  fileId?: string | null;
-  fileStatus?:
-    | "PENDING"
-    | "SCANNING"
-    | "APPROVED"
-    | "REJECTED"
-    | "QUARANTINED"
-    | null;
-  fileStatusReason?: string | null;
+```js id="r6d8vk"
+const supportTicketListItem = {
+  ticketId: 1001,
+  title: "솔루션 데모 환경 문의",
+  category: "TECHNICAL", // ACCOUNT | RESOURCE | CAREER | TECHNICAL | OTHER
+  createdAt: "2026-04-20T11:00:00+09:00",
+  ticketStatus: "RECEIVED", // RECEIVED | REVIEWING | ANSWERED | CLOSED
+  fileId: null, // int64 or null
+  fileStatus: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED | null
+  fileStatusReason: null,
 };
 ```
 
@@ -348,11 +304,8 @@ MVP에서는 **문의 목록 API가 파일 상태를 함께 내려주는 방식*
 
 ## 11.3 첨부파일 상태 메시지
 
-- `PENDING`: “문의는 접수되었으며 첨부파일 등록이 완료되었습니다.”
-- `SCANNING`: “첨부파일 보안 검사가 진행 중입니다.”
-- `APPROVED`: “첨부파일 검사가 완료되었습니다.”
-- `REJECTED`: “첨부파일이 정책에 따라 처리 제한되었습니다.”
-- `QUARANTINED`: “첨부파일이 추가 검토 대상으로 분류되었습니다.”
+배지 라벨 정본은 섹션 6.3의 상태 라벨 기준을 따른다.
+본 페이지에서는 배지 라벨 뒤에 문의 맥락 설명 문구를 1문장으로만 덧붙인다.
 
 주의:
 
@@ -402,13 +355,13 @@ MySupportTicketsPage
 ## 14.1 필요한 파일 제안
 
 ```text id="zmhrol"
-apps/external-web/src/pages/support/MySupportTicketsPage.tsx
-apps/external-web/src/components/support/SupportStatusSummary.tsx
-apps/external-web/src/components/support/SupportTicketListTable.tsx
-apps/external-web/src/components/common/SupportTicketStatusBadge.tsx
-apps/external-web/src/components/common/FileStatusBadge.tsx
-apps/external-web/src/api/support.ts
-apps/external-web/src/types/support.ts
+apps/external-web/src/pages/support/MySupportTicketsPage.jsx
+apps/external-web/src/components/support/SupportStatusSummary.jsx
+apps/external-web/src/components/support/SupportTicketListTable.jsx
+apps/external-web/src/components/common/SupportTicketStatusBadge.jsx
+apps/external-web/src/components/common/FileStatusBadge.jsx
+apps/external-web/src/api/support.js
+apps/external-web/src/types/support.js
 ```
 
 ## 14.2 상태 관리 기준

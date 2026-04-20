@@ -52,7 +52,7 @@
 
 - 지원자 요약 카드: 이름, 이메일, 지원 공고, 제출일
 - 지원서 상세 섹션: 연락처, 자기소개
-- 첨부파일 상태 섹션: fileId, 검역 상태, 사유
+- 첨부파일 상태 섹션: fileId, 파일 보안 검사 상태, 사유
 - 상태 변경 패널: 드롭다운 + 저장 버튼
 - 검토 메모 패널: 메모 목록 + 메모 작성
 
@@ -60,14 +60,14 @@
 
 ## 6. 상태값 설계
 
-```ts
-type ApplicantStatus = "RECEIVED" | "REVIEWING" | "PASSED" | "REJECTED";
+```js
+const applicantStatuses = ["SUBMITTED", "REVIEWING", "PASSED", "REJECTED"];
 
-type ApplicantDetailState = {
-  loading: boolean;
-  savingStatus: boolean;
-  savingNote: boolean;
-  error: string | null;
+const applicantDetailState = {
+  loading: false,
+  savingStatus: false,
+  savingNote: false,
+  error: null,
 };
 ```
 
@@ -99,7 +99,7 @@ type ApplicantDetailState = {
 
 - 상태 변경/메모 등록은 `MANAGER` 이상만 가능
 - 민감정보(개인 연락처)는 최소 노출
-- 상태 변경 이벤트는 감사 로그 대상
+- 상태 변경 이벤트는 감사 로그 대상(정본: [SECURITY_BASELINE.md](../../../security/SECURITY_BASELINE.md))
 - 첨부파일 상세 보안 판정은 내부 화면에서만 표시
 
 ---

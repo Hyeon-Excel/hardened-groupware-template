@@ -63,11 +63,11 @@
 
 ## 6. 데이터 모델
 
-```ts
-type PageState = {
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
+```js
+const pageState = {
+  loading: false,
+  saving: false,
+  error: null,
 };
 ```
 

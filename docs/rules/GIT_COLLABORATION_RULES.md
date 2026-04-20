@@ -47,7 +47,7 @@
 예시:
 
 - `feat/auth-external-login-rate-limit`
-- `fix/files-quarantine-status-mapping`
+- `fix/files-security-status-mapping`
 - `docs/api-openapi-sync-checklist`
 - `hotfix/internal-auth-session-cookie`
 
@@ -89,7 +89,7 @@
 - `external-api`
 - `internal-web`
 - `internal-api`
-- `file-worker`
+- `file-security`
 - `db-external`
 - `db-internal`
 - `api-contract`
@@ -105,7 +105,7 @@
 예시:
 
 - `feat(external-api): 지원 티켓 생성 엔드포인트 추가`
-- `fix(file-worker): 미확인 MIME 타입에 대한 승인 이동 방지`
+- `fix(file-security): 미확인 MIME 타입 파일의 다운로드 제공 차단`
 - `docs(api-contract): careers me 경로를 정식 경로로 정렬`
 - `security(internal-api): 서비스 토큰 검증 강제`
 
@@ -137,7 +137,7 @@
 - 영향 범위(서비스/문서/DB) 명시
 - 테스트 또는 검증 결과 첨부
 - 롤백 전략(필요 시) 명시
-- PR 본문에서 [docs/rules/PR_CHECKLIST.md](PR_CHECKLIST.md) 항목 확인
+- PR 본문에서 [PR_CHECKLIST.md](PR_CHECKLIST.md) 항목 확인
 
 ### 4.3 리뷰 규칙
 

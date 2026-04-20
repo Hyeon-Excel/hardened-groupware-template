@@ -4,12 +4,31 @@
 
 이 문서는 공개 웹 상세 페이지 문서를 일관된 형식으로 작성하기 위한 공통 템플릿이다.
 
+중요:
+
+- 이 템플릿은 "페이지 고유 정보"를 담기 위한 용도다.
+- 공통 보안/API 정책은 전문을 복붙하지 않고 정본 문서 링크로 참조한다.
+
 사용 대상:
 
 - [SUPPORT_NEW.md](SUPPORT_NEW.md)
 - [SUPPORT_ME.md](SUPPORT_ME.md)
 - [CAREER_APPLY.md](CAREER_APPLY.md)
 - [MYPAGE_APPLICATIONS.md](MYPAGE_APPLICATIONS.md)
+
+---
+
+## 0. 중복 최소화 작성 원칙
+
+1. 공통 보안 정책은 [SECURITY_BASELINE.md](../../../security/SECURITY_BASELINE.md) 링크로만 참조한다.
+2. API 응답 스키마/상태코드 규칙은 [API.md](../../../api/API.md), [openapi.yaml](../../../api/openapi.yaml) 링크로만 참조한다.
+3. 상태 enum/배지 문구는 [TERMINOLOGY.md](../../../TERMINOLOGY.md) 링크로만 참조한다.
+4. 페이지 문서에는 해당 페이지에서 실제로 달라지는 값만 남긴다.
+   - 입력 필드
+   - 사용자 시나리오
+   - 상태 배지 표시 위치/우선순위
+   - 페이지 고유 예외 처리
+5. 여러 페이지에서 동일한 표/문구가 반복되면 템플릿 공통 섹션 또는 인덱스 문서로 이동한다.
 
 ---
 
@@ -116,23 +135,23 @@
 
 ## 7.1 화면 상태(State)
 
-```ts
-type PageState = {
-  loading: boolean;
-  submitting?: boolean;
-  error: string | null;
-  items?: unknown[];
+```js
+const pageState = {
+  loading: false,
+  submitting: false,
+  error: null,
+  items: [],
 };
 ```
 
 ## 7.2 핵심 데이터 타입 예시
 
-```ts
-type Item = {
-  id: number;
-  title: string;
-  status: string;
-  createdAt: string;
+```js
+const item = {
+  id: 1,
+  title: "샘플 항목",
+  status: "ACTIVE",
+  createdAt: "2026-04-20T09:00:00+09:00",
 };
 ```
 
@@ -235,13 +254,13 @@ type Item = {
 
 예시 파일 구조:
 
-- `pages/XXXPage.tsx`
-- `components/XXXList.tsx`
-- `components/XXXForm.tsx`
-- `components/XXXStatusBadge.tsx`
-- `hooks/useXXX.ts`
-- `api/xxx.ts`
-- `types/xxx.ts`
+- `pages/XXXPage.jsx`
+- `components/XXXList.jsx`
+- `components/XXXForm.jsx`
+- `components/XXXStatusBadge.jsx`
+- `hooks/useXXX.js`
+- `api/xxx.js`
+- `types/xxx.js`
 
 ---
 

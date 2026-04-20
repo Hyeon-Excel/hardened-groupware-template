@@ -16,6 +16,32 @@ CREATE TABLE IF NOT EXISTS internal_employees (
   KEY idx_internal_employees_role_status (role, status)
 );
 
+-- File bytes are stored in object storage.
+-- DB stores file metadata and security state only.
+CREATE TABLE IF NOT EXISTS uploaded_file (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  owner_id BIGINT NOT NULL,
+  storage_key VARCHAR(255) NOT NULL UNIQUE,
+  original_filename VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(120) NOT NULL,
+  size_bytes BIGINT NOT NULL,
+  sha256 CHAR(64) NOT NULL,
+  scan_status VARCHAR(20) NOT NULL DEFAULT 'APPROVED',
+  scan_result_code VARCHAR(80) NOT NULL DEFAULT 'V0_SCAN_DISABLED',
+  scan_engine VARCHAR(80),
+  scanner_version VARCHAR(80),
+  last_error VARCHAR(500),
+  retry_count INT NOT NULL DEFAULT 0,
+  uploaded_at DATETIME NOT NULL,
+  scanned_at DATETIME,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  CONSTRAINT fk_uploaded_file_owner_employee
+    FOREIGN KEY (owner_id) REFERENCES internal_employees(employee_id),
+  KEY idx_uploaded_file_owner_uploaded_at (owner_id, uploaded_at),
+  KEY idx_uploaded_file_scan_status_uploaded_at (scan_status, uploaded_at)
+);
+
 CREATE TABLE IF NOT EXISTS internal_notices (
   notice_id BIGINT PRIMARY KEY AUTO_INCREMENT,
   title VARCHAR(200) NOT NULL,

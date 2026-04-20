@@ -4,8 +4,14 @@
 
 ## 구조
 
-- `external/schema`: 공개 서비스 도메인 스키마
-- `internal/schema`: 내부 그룹웨어 도메인 스키마
+- `external/schema`: 공개 서비스 전용 DB 스키마
+- `internal/schema`: 내부 그룹웨어 전용 DB 스키마
+
+DB 운영 원칙:
+
+- 데이터베이스는 `external_db`, `internal_db` 두 개만 사용한다.
+- 파일은 단일 오브젝트 스토리지에 저장하고, prefix(`raw/`, `approved/`, `rejected/`)로 논리 구역을 분리한다.
+- 파일 바이트는 DB에 저장하지 않고, 메타데이터/상태만 `uploaded_file` 테이블에 저장한다.
 
 ## 현재 포함 파일
 
@@ -17,8 +23,24 @@
 ### 1) 인덱스 기준
 
 - 로그인/인증 식별자, 상태값, 생성일시, 폴링 대상 컬럼에는 기본 인덱스를 둔다.
-- 특히 파일 검역 큐(`file_scan_jobs`)는 `status + updated_at` 인덱스를 필수로 둔다.
+- 파일 상태 테이블(`uploaded_file`)은 `scan_status + uploaded_at` 인덱스를 필수로 둔다.
 - 고빈도 목록 조회 API에서 사용하는 `(status, created_at)` 패턴을 우선 인덱싱한다.
+
+### 1.1 uploaded_file 공통 필드 기준
+
+external/internal DB의 `uploaded_file`은 아래 필드를 공통 사용한다.
+
+- `id`, `owner_id`, `storage_key`
+- `original_filename`, `mime_type`, `size_bytes`, `sha256`
+- `scan_status` (`PENDING`, `SCANNING`, `APPROVED`, `REJECTED`, `FAILED`)
+- `scan_result_code`, `scan_engine`, `scanner_version`
+- `last_error`, `retry_count`
+- `uploaded_at`, `scanned_at`, `created_at`, `updated_at`
+
+v0 기본값 규칙:
+
+- `scan_status='APPROVED'`
+- `scan_result_code='V0_SCAN_DISABLED'`
 
 ### 2) Cross-DB 참조 무결성 기준
 

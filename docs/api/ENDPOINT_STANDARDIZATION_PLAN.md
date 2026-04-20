@@ -49,9 +49,9 @@
 
 ## 4. Canonical 결정
 
-| 기능              | Canonical                                 | Deprecate 후보                    | 비고                                             |
-| ----------------- | ----------------------------------------- | --------------------------------- | ------------------------------------------------ |
-| 내 지원 내역 조회 | `GET /api/external/careers/applications/me` | `GET /api/external/me/applications` | 페이지 명세와 OpenAPI가 canonical 경로를 사용 중 |
+| 기능              | Canonical                                 | Deprecate 후보                    | 비고                                                                  |
+| ----------------- | ----------------------------------------- | --------------------------------- | --------------------------------------------------------------------- |
+| 내 지원 내역 조회 | `GET /api/external/careers/applications/me` | `GET /api/external/me/applications` | OpenAPI 계약은 canonical만 노출. deprecated alias는 현재 미도입(미노출) |
 
 보완 결정:
 
@@ -65,7 +65,7 @@
 ### Phase A. 계약 확정
 
 - OpenAPI에서 canonical 경로를 기본 계약으로 유지
-- deprecated 경로가 필요하면 `deprecated: true`와 sunset 설명 추가
+- deprecated 경로가 필요한 경우에만 `deprecated: true`와 sunset 설명을 추가
 
 ### Phase B. 서버 호환 구간
 

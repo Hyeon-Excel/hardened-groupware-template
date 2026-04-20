@@ -9,7 +9,7 @@
 ## 2. 기준 시점
 
 - 작성일: 2026-04-15
-- 최근 업데이트: 2026-04-16 (P0/P1/P2 path 및 스키마 동기화, internal admin path 정합화)
+- 최근 업데이트: 2026-04-20 (파일 상태머신 용어/스키마 정리, internal admin file-security-logs 정합화)
 - 비교 기준:
   - API 목록 문서: [docs/api/API.md](../api/API.md)
   - 계약 스펙: [docs/api/openapi.yaml](../api/openapi.yaml)
@@ -73,7 +73,7 @@
 - [x] `GET /api/internal/admin/audit-logs`
 - [x] `GET /api/internal/admin/external-users`
 - [x] `GET /api/internal/admin/external-resources`
-- [x] `GET /api/internal/admin/quarantine-logs`
+- [x] `GET /api/internal/admin/file-security-logs`
 - [x] `GET /api/external/internal/resources`
 - [x] `DELETE /api/external/internal/resources/{resourceId}`
 - [x] `PATCH /api/external/internal/resources/{resourceId}/publish`

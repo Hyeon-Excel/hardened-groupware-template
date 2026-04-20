@@ -13,10 +13,10 @@
 - 텍스트 입력 + 파일 업로드 포함
 - 세션/쿠키 기반 인증
 - CSRF 보호 필요
-- 파일 검역 비동기 처리
+- 파일 보안 검사 비동기 처리
 - 업로드 후 상태 추적 가능
 
-즉, 본 페이지는 단순 폼이 아니라 **인증, 입력 검증, 파일 검역, 상태 확인, 에러 처리**가 동시에 필요한 복합 페이지다.
+즉, 본 페이지는 단순 폼이 아니라 **인증, 입력 검증, 파일 보안 검사, 상태 확인, 에러 처리**가 동시에 필요한 복합 페이지다.
 
 ---
 
@@ -60,7 +60,7 @@
 
 - 사용자가 특정 채용 공고에 대해 지원서를 제출할 수 있도록 한다.
 - 제출 과정에서 필수 입력값을 검증한다.
-- 첨부파일을 1개 업로드하고, 검역이 비동기로 진행된다는 점을 안내한다.
+- 첨부파일을 1개 업로드하고, 파일 보안 검사가 비동기로 진행된다는 점을 안내한다.
 - 제출 직후 성공/실패를 명확히 알려준다.
 - 제출 후 내 지원 내역 페이지로 이동할 수 있게 한다.
 
@@ -74,7 +74,7 @@
 6. 제출 버튼 클릭
 7. CSRF 토큰 검증 + 입력 검증 + 업로드 접수
 8. 서버가 `202 Accepted` 응답 반환
-9. 프론트가 “지원서가 접수되었으며 첨부파일은 검역 중일 수 있습니다” 메시지 표시
+9. 프론트가 “지원서가 접수되었으며 첨부파일은 파일 보안 검사 중일 수 있습니다” 메시지 표시
 10. 사용자를 `/mypage/applications`로 이동시키거나 성공 상태 화면 표시
 
 ---
@@ -90,7 +90,7 @@
  │   ├─ 기본 정보 입력
  │   ├─ 자기소개 입력
  │   ├─ 첨부파일 업로드
- │   ├─ 파일 검역 안내 문구
+ │   ├─ 파일 보안 검사 안내 문구
  │   └─ 제출 버튼 / 취소 버튼
  ├─ Validation / Error Message Area
  └─ Footer
@@ -144,13 +144,13 @@
 
 표시 목적:
 
-- 사용자가 업로드 직후 파일이 바로 사용되는 것이 아니라 검역될 수 있음을 이해하도록 안내
+- 지원서 접수 성공과 첨부파일 최종 사용 가능 상태가 동일하지 않음을 안내
 
-예시 문구:
+작성 규칙:
 
-- “첨부파일은 업로드 후 보안 검사를 거칠 수 있습니다.”
-- “검사 결과에 따라 내부 검토에 사용되지 않을 수 있습니다.”
-- “지원서 접수 성공은 첨부파일 최종 승인과 동일하지 않을 수 있습니다.”
+- 공통 정책 문구 정본은 [SECURITY_BASELINE.md](../../../security/SECURITY_BASELINE.md) 섹션 7을 따른다.
+- 상태 전이 설명은 [ARCHITECTURE.md](../../ARCHITECTURE.md) 섹션 5, API 계약은 [API.md](../../../api/API.md) 섹션 10을 참조한다.
+- 본 페이지에는 사용자 안내 문구 1~2줄만 유지한다.
 
 ---
 
@@ -177,38 +177,38 @@
 
 ## 7.1 화면 상태(State)
 
-```ts
-type CareerApplyPageState = {
-  loading: boolean;
-  submitting: boolean;
-  career: CareerSummary | null;
+```js
+const careerApplyPageState = {
+  loading: false,
+  submitting: false,
+  career: null,
   form: {
-    name: string;
-    email: string;
-    phone: string;
-    coverLetter: string;
-    resumeFile: File | null;
-  };
-  validationErrors: Record<string, string>;
+    name: "",
+    email: "",
+    phone: "",
+    coverLetter: "",
+    resumeFile: null,
+  },
+  validationErrors: {},
   submitResult: {
-    applicationId?: number;
-    fileId?: string;
-    jobId?: string;
-    status?: "PENDING" | "SCANNING";
-  } | null;
+    applicationId: null,
+    fileId: null,
+    scanResultCode: null,
+    status: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED
+  },
 };
 ```
 
 ## 7.2 공고 요약 데이터 예시
 
-```ts
-type CareerSummary = {
-  careerId: number;
-  title: string;
-  department?: string;
-  description?: string;
-  status: "OPEN" | "CLOSED";
-  deadline?: string;
+```js
+const careerSummary = {
+  careerId: 2001,
+  title: "보안 솔루션 백엔드 개발자",
+  department: "Platform Engineering",
+  description: "인증/인가 및 파일 보안 파이프라인 개발",
+  status: "OPEN", // OPEN | CLOSED
+  deadline: "2026-05-31T23:59:59+09:00",
 };
 ```
 
@@ -256,6 +256,8 @@ Content-Type:
 예상 응답:
 
 - `202 Accepted`
+- v0 기본값은 `data.status=APPROVED`, `data.scanResultCode=V0_SCAN_DISABLED`다.
+- v1에서는 `data.status=PENDING`으로 시작할 수 있으며, `data.scanResultCode`는 스캔 전 `null`일 수 있다.
 
 응답 예시:
 
@@ -263,15 +265,17 @@ Content-Type:
 {
   "success": true,
   "code": "FILE_UPLOAD_ACCEPTED",
-  "message": "지원서가 접수되었습니다. 첨부파일은 검역 중일 수 있습니다.",
+  "message": "지원서가 접수되었습니다.",
   "data": {
-    "fileId": "file_12345",
-    "jobId": "job_67890",
-    "status": "PENDING"
+    "fileId": 12345,
+    "status": "APPROVED",
+    "scanResultCode": "V0_SCAN_DISABLED"
   },
   "timestamp": "2026-04-15T12:00:00Z"
 }
 ```
+
+- `data.status`/`data.scanResultCode` 값은 v0/v1 기준선에 따라 달라진다(정본 참조: 섹션 6.3).
 
 ---
 
@@ -289,7 +293,7 @@ Content-Type:
 - `SCANNING`
 - `APPROVED`
 - `REJECTED`
-- `QUARANTINED`
+- `FAILED`
 
 주의:
 
@@ -399,12 +403,12 @@ CareerApplyPage
 ## 13.1 필요한 파일 제안
 
 ```text
-apps/external-web/src/pages/careers/CareerApplyPage.tsx
-apps/external-web/src/components/careers/CareerSummaryCard.tsx
-apps/external-web/src/components/careers/ApplicationForm.tsx
-apps/external-web/src/components/common/FileUploadField.tsx
-apps/external-web/src/api/careers.ts
-apps/external-web/src/types/career.ts
+apps/external-web/src/pages/careers/CareerApplyPage.jsx
+apps/external-web/src/components/careers/CareerSummaryCard.jsx
+apps/external-web/src/components/careers/ApplicationForm.jsx
+apps/external-web/src/components/common/FileUploadField.jsx
+apps/external-web/src/api/careers.js
+apps/external-web/src/types/career.js
 ```
 
 ## 13.2 상태 관리 기준
@@ -425,7 +429,7 @@ apps/external-web/src/types/career.ts
 - 기본 지원서 입력
 - 첨부파일 1개 업로드
 - 제출 처리
-- 검역 안내 문구
+- 파일 보안 검사 안내 문구
 - 성공/실패 메시지
 
 제외:
@@ -463,6 +467,6 @@ apps/external-web/src/types/career.ts
 1. 로그인한 일반 사용자만 접근 가능하다.
 2. 첨부파일은 1개만 허용한다.
 3. 제출 성공은 최종 승인 완료가 아니라 **업로드 접수 성공**일 수 있다.
-4. 첨부파일은 비동기 검역 흐름을 따른다.
+4. 첨부파일은 비동기 파일 보안 검사 흐름을 따른다.
 5. 에러 메시지와 제출 결과는 사용자가 이해할 수 있게 명확히 보여야 한다.
 6. MVP에서는 단순하고 안정적인 흐름을 우선한다.

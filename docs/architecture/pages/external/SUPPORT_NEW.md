@@ -13,11 +13,11 @@
 
 - 사용자가 문의 제목과 내용을 작성해 고객센터에 접수
 - 필요 시 첨부파일 1개를 함께 업로드
-- 첨부파일은 비동기 검역 흐름을 전제로 처리
+- 첨부파일은 비동기 파일 보안 검사 흐름을 전제로 처리
 - 문의 접수 이후 사용자가 `/support/me`에서 상태를 확인할 수 있도록 연결
 - 입력 검증, 인증, CSRF, 업로드 정책을 한 화면에서 처리
 
-즉, 이 페이지는 단순 문의 폼이 아니라 **세션 인증 + CSRF + 파일 검역 + 후속 상태 조회**를 모두 고려해야 하는 핵심 입력 페이지다.
+즉, 이 페이지는 단순 문의 폼이 아니라 **세션 인증 + CSRF + 파일 보안 검사 + 후속 상태 조회**를 모두 고려해야 하는 핵심 입력 페이지다.
 
 ---
 
@@ -57,7 +57,7 @@
 
 - 사용자가 제목과 내용을 입력해 문의를 등록
 - 필요한 경우 첨부파일 1개를 업로드
-- 업로드된 첨부파일은 검역 절차가 진행될 수 있음을 안내
+- 업로드된 첨부파일은 파일 보안 검사 절차가 진행될 수 있음을 안내
 - 접수 이후 `/support/me`에서 상태를 확인할 수 있도록 연결
 
 ## 4.2 대표 사용자 시나리오
@@ -68,8 +68,8 @@
 4. 필요 시 첨부파일 1개 선택
 5. 제출 버튼 클릭
 6. CSRF 토큰 검증 + 입력 검증 + 문의 접수 처리
-7. 첨부파일이 있으면 비동기 검역 작업 등록
-8. 서버가 `202 Accepted` 또는 `201 Created` 성격의 응답 반환
+7. 첨부파일이 있으면 비동기 파일 보안 검사 작업 등록
+8. 서버가 `202 Accepted` 응답 반환 (첨부 유무와 무관, OpenAPI 계약 기준)
 9. 프론트가 “문의가 접수되었고 첨부파일은 보안 검사를 거칠 수 있습니다” 메시지 표시
 10. 사용자를 `/support/me`로 이동시키거나 접수 완료 상태를 보여줌
 
@@ -87,13 +87,11 @@
  │   ├─ 문의 유형 선택(선택 사항)
  │   ├─ 문의 내용 입력
  │   ├─ 첨부파일 업로드
- │   ├─ 검역 안내 문구
+ │   ├─ 파일 보안 검사 안내 문구
  │   └─ 제출 / 취소 버튼
  ├─ Validation / Error Message Area
  └─ Footer
 ```
-
-````
 
 ---
 
@@ -139,13 +137,13 @@
 
 표시 목적:
 
-- 첨부파일이 즉시 열람되는 것이 아니라 검역될 수 있음을 사용자에게 명확히 안내
+- 문의 접수 성공과 첨부파일 최종 사용 가능 상태가 동일하지 않음을 안내
 
-예시 문구:
+작성 규칙:
 
-- “첨부파일은 업로드 후 보안 검사를 거칠 수 있습니다.”
-- “검사 결과에 따라 첨부파일이 내부 검토에 사용되지 않을 수 있습니다.”
-- “문의 접수 성공은 첨부파일 최종 승인과 동일하지 않을 수 있습니다.”
+- 공통 정책 문구 정본은 [SECURITY_BASELINE.md](../../../security/SECURITY_BASELINE.md) 섹션 7을 따른다.
+- 상태 전이 설명은 [ARCHITECTURE.md](../../ARCHITECTURE.md) 섹션 5, API 계약은 [API.md](../../../api/API.md) 섹션 10을 참조한다.
+- 본 페이지에는 사용자에게 필요한 안내 문구 1~2줄만 유지한다.
 
 ---
 
@@ -172,35 +170,36 @@
 
 ## 7.1 화면 상태(State)
 
-```ts id="twzjvi"
-type SupportNewPageState = {
-  loading: boolean;
-  submitting: boolean;
+```js id="twzjvi"
+const supportNewPageState = {
+  loading: false,
+  submitting: false,
   form: {
-    title: string;
-    category: string;
-    content: string;
-    attachment: File | null;
-  };
-  validationErrors: Record<string, string>;
+    title: "",
+    category: "OTHER",
+    content: "",
+    attachment: null,
+  },
+  validationErrors: {},
   submitResult: {
-    ticketId?: number;
-    fileId?: string;
-    jobId?: string;
-    status?: "PENDING" | "SCANNING";
-  } | null;
+    ticketId: null,
+    fileId: null,
+    scanResultCode: null,
+    status: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED
+  },
 };
 ```
 
 ## 7.2 문의 유형 예시
 
-```ts id="s6m7s9"
-type SupportCategory =
-  | "ACCOUNT"
-  | "RESOURCE"
-  | "CAREER"
-  | "TECHNICAL"
-  | "OTHER";
+```js id="s6m7s9"
+const supportCategories = [
+  "ACCOUNT",
+  "RESOURCE",
+  "CAREER",
+  "TECHNICAL",
+  "OTHER",
+];
 ```
 
 ---
@@ -234,8 +233,10 @@ Content-Type:
 
 응답 기대:
 
-- 문의만 등록되면 `201 Created`도 가능
-- 첨부파일 검역이 포함되면 `202 Accepted`가 더 적절
+- **`202 Accepted` 단일 계약** (첨부 유무·v0/v1 무관, `openapi.yaml` `POST /api/external/support-tickets` 기준)
+- v0 기본값은 `data.status=APPROVED`, `data.scanResultCode=V0_SCAN_DISABLED`다.
+- v1에서는 `data.status=PENDING`으로 시작할 수 있으며, `data.scanResultCode`는 스캔 전 `null`일 수 있다.
+- 첨부가 없으면 `data.fileId`, `data.status`, `data.scanResultCode`, `data.scannedAt`은 모두 `null`
 
 권장 응답 예시:
 
@@ -243,18 +244,16 @@ Content-Type:
 {
   "success": true,
   "code": "SUPPORT_TICKET_ACCEPTED",
-  "message": "문의가 접수되었습니다. 첨부파일은 검역 중일 수 있습니다.",
+  "message": "문의가 접수되었습니다.",
   "data": {
     "ticketId": 1001,
-    "fileId": "file_12345",
-    "jobId": "job_67890",
-    "status": "PENDING"
+    "fileId": 12345,
+    "status": "APPROVED",
+    "scanResultCode": "V0_SCAN_DISABLED"
   },
   "timestamp": "2026-04-15T12:00:00Z"
 }
 ```
-
----
 
 ## 8.3 파일 상태 조회
 
@@ -359,12 +358,12 @@ SupportNewPage
 ## 13.1 필요한 파일 제안
 
 ```text id="lo89bb"
-apps/external-web/src/pages/support/SupportNewPage.tsx
-apps/external-web/src/components/support/SupportGuideCard.tsx
-apps/external-web/src/components/support/SupportForm.tsx
-apps/external-web/src/components/common/FileUploadField.tsx
-apps/external-web/src/api/support.ts
-apps/external-web/src/types/support.ts
+apps/external-web/src/pages/support/SupportNewPage.jsx
+apps/external-web/src/components/support/SupportGuideCard.jsx
+apps/external-web/src/components/support/SupportForm.jsx
+apps/external-web/src/components/common/FileUploadField.jsx
+apps/external-web/src/api/support.js
+apps/external-web/src/types/support.js
 ```
 
 ## 13.2 상태 관리 기준
@@ -383,7 +382,7 @@ apps/external-web/src/types/support.ts
 - 문의 유형 선택(단순형)
 - 첨부파일 1개 업로드
 - 제출 처리
-- 검역 안내 문구
+- 파일 보안 검사 안내 문구
 - 성공/실패 메시지
 
 제외:
@@ -422,6 +421,5 @@ apps/external-web/src/types/support.ts
 2. 제목과 내용은 필수, 첨부파일은 선택이다.
 3. 첨부파일은 1개만 허용한다.
 4. 문의 접수 성공은 첨부파일 최종 승인과 동일하지 않을 수 있다.
-5. 첨부파일은 비동기 검역 흐름을 따른다.
+5. 첨부파일은 비동기 파일 보안 검사 흐름을 따른다.
 6. 사용자는 이후 `/support/me`에서 문의 상태를 확인하게 된다.
-````
