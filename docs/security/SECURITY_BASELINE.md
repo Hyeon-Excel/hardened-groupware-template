@@ -138,7 +138,7 @@ add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
 ### 6.1 v0 기본값
 
-- 소유권 불일치 시 `403`을 반환할 수도 있고, 서비스 계층이 먼저 예외를 던져 다른 상태코드를 줄 수도 있다(구현·프레임워크 기본 예외 처리에 의존).
+- 소유권 불일치 시 `403` 또는 `404`가 반환될 수 있다(구현·프레임워크 기본 예외 처리에 의존).
 - 리소스 존재 여부 노출이 실제 공격 시 어떻게 활용되는지를 분석 페이즈에서 관찰한다.
 
 ### 6.2 v1 하드닝 목표값
@@ -163,6 +163,8 @@ add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
 - fail-closed: `PENDING/SCANNING/REJECTED/FAILED`는 다운로드 거부.
 - 다운로드는 owner API 게이트만 허용(직접 접근 금지, presigned URL도 owner API가 발급/검증 주체).
+- 공개 파일 상태/문의 응답의 사유 필드는 일반화 코드만 노출하고, 내부 탐지 상세 사유는 내부 API/운영 로그에서만 허용한다.
+- 공개 API의 `scanResultCode`는 `V0_SCAN_DISABLED`, `PUBLIC_SCAN_RESULT_UNAVAILABLE`, `null`만 허용한다.
 
 ---
 

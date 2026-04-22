@@ -191,7 +191,6 @@ const careerApplyPageState = {
   },
   validationErrors: {},
   submitResult: {
-    applicationId: null,
     fileId: null,
     scanResultCode: null,
     status: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED
@@ -335,8 +334,8 @@ Content-Type:
 ## 10.2 제출 성공
 
 - “지원서가 접수되었습니다.”
-- “첨부파일은 보안 검사를 거칠 수 있습니다.”
-- “지원 내역에서 상태를 확인할 수 있습니다.”
+- “첨부파일 처리 상태는 지원 내역에서 확인할 수 있습니다.”
+- “처리 단계에 따라 바로 열람이 제한될 수 있습니다.”
 
 ## 10.3 제출 실패
 

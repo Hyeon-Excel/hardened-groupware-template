@@ -33,6 +33,7 @@
 | 용어 기준             | [docs/TERMINOLOGY.md](TERMINOLOGY.md)                                                                   | 용어/네이밍 기준                         |
 | 보안 운영 기준        | [docs/security/SECURITY_BASELINE.md](security/SECURITY_BASELINE.md)                                     | 세션/토큰/보안 헤더 운영 기준            |
 | 테스트 전략           | [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md)                                               | 단위/통합/E2E 범위 및 품질 게이트 기준   |
+| 내부 접근제어 기준    | [docs/rules/INTERNAL_ACCESS_CONTROL_POLICY.md](rules/INTERNAL_ACCESS_CONTROL_POLICY.md)                 | 내부 조직/직급/부서 권한 구현 기준       |
 | 협업 Git 규칙         | [docs/rules/GIT_COLLABORATION_RULES.md](rules/GIT_COLLABORATION_RULES.md)                               | 브랜치/커밋/병합 협업 기준               |
 | PR 체크리스트         | [docs/rules/PR_CHECKLIST.md](rules/PR_CHECKLIST.md)                                                     | PR 품질 게이트 및 문서 동기화 기준       |
 | 백엔드 부트스트랩 규칙 | [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md)                       | external/internal API 공통 생성 기준     |
@@ -52,6 +53,7 @@
 7. 테스트 범위/품질 게이트 충돌 시 [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md)를 우선한다.
 8. 브랜치/커밋/PR 운영 규칙 충돌 시 [docs/rules/GIT_COLLABORATION_RULES.md](rules/GIT_COLLABORATION_RULES.md)를 우선한다.
 9. Spring Boot 초기 생성/버전/의존성 기준 충돌 시 [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md)를 우선한다.
+10. 내부 조직/직급/부서 권한 충돌 시 [docs/rules/INTERNAL_ACCESS_CONTROL_POLICY.md](rules/INTERNAL_ACCESS_CONTROL_POLICY.md)를 우선한다.
 
 ---
 
@@ -89,6 +91,7 @@
 - [ ] 용어 신규 추가 시 [docs/TERMINOLOGY.md](TERMINOLOGY.md) 반영
 - [ ] 세션/토큰/보안 헤더 정책 변경 시 [docs/security/SECURITY_BASELINE.md](security/SECURITY_BASELINE.md) 반영
 - [ ] 테스트 범위/게이트 변경 시 [docs/testing/TEST_STRATEGY.md](testing/TEST_STRATEGY.md) 반영
+- [ ] 내부 권한/조직 정책 변경 시 [docs/rules/INTERNAL_ACCESS_CONTROL_POLICY.md](rules/INTERNAL_ACCESS_CONTROL_POLICY.md) 반영
 - [ ] 공통 내용은 복붙하지 않고 정본 링크 참조로 처리했는지 확인
 - [ ] PR 작성 시 [docs/rules/PR_CHECKLIST.md](rules/PR_CHECKLIST.md) 항목 점검
 - [ ] external/internal API 생성 기준 변경 시 [docs/rules/SPRING_BOOT_BOOTSTRAP_RULES.md](rules/SPRING_BOOT_BOOTSTRAP_RULES.md) 반영
@@ -105,3 +108,4 @@
 - 2026-04-17: Spring Boot 공통 부트스트랩 규칙 문서 정본 세트 추가
 - 2026-04-20: 프로젝트 주제 회귀(모의해킹·취약점 분석 중심)와 파일 처리 모델 재정의(단일 오브젝트 스토리지 + 상태 머신)에 따라 PLANNING.md 재작성, 구버전은 `docs/archive/PLANNING_2026-04-20_pre-pentest-pivot.md`로 이동
 - 2026-04-20: 문서 중복 최소화 규칙(정본 링크 우선, 페이지 문서 고유 정보 중심) 추가
+- 2026-04-21: 내부 접근제어 기준 문서(`INTERNAL_ACCESS_CONTROL_POLICY.md`)를 정본 세트와 우선순위 규칙에 추가

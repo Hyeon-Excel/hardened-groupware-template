@@ -69,6 +69,31 @@ v0 기본값:
 - `scan_status='APPROVED'`
 - `scan_result_code='V0_SCAN_DISABLED'`
 
+### 2.4 공개 파일 상태 사유 코드
+
+공개 API(`ExternalFileStatusResponse.reason`, `ExternalSupportTicketDetailResponse.fileStatusReason`)는 아래 일반화 코드만 사용한다.
+
+| 코드 | 의미 |
+| --- | --- |
+| `REVIEW_PENDING` | 아직 처리 대기/진행 중 |
+| `POLICY_RESTRICTED` | 정책상 공개 사용자 제공 제한 |
+| `SCAN_FAILED` | 검사 실패 또는 검사 엔진 오류 |
+| `TEMPORARY_UNAVAILABLE` | 일시적 처리 불가(재시도 필요) |
+
+내부 탐지 상세 코드/시그니처는 내부 API와 운영 로그에서만 사용한다.
+
+### 2.5 공개 scan_result_code 사용 규칙
+
+공개 API의 `scanResultCode`는 내부 엔진 상세값을 직접 노출하지 않는다.
+
+| 코드 | 사용 시점 |
+| --- | --- |
+| `V0_SCAN_DISABLED` | v0 기준선(스캔 비활성) |
+| `PUBLIC_SCAN_RESULT_UNAVAILABLE` | v1에서 외부 사용자에게 상세 결과를 마스킹할 때 |
+| `null` | 첨부 없음, 스캔 전, 또는 노출 불필요 |
+
+내부 운영/감사용 상세 코드는 내부 API(`InternalFileStatusResponse`)와 운영 로그에서만 사용한다.
+
 ---
 
 ## 3. API 경계 용어

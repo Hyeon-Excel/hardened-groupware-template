@@ -404,7 +404,14 @@ OpenAPI 계약 규칙:
 - `POST /api/internal/auth/login`
 - `POST /api/internal/auth/logout`
 - `GET /api/internal/auth/me`
+- `PATCH /api/internal/me/password`
 - `GET /api/internal/csrf`
+
+정책 규칙:
+
+- 내부 세션 응답은 `employeeId`, `employeeNo`, `orgRole`, `departmentCode`, `accountStatus`, `mustChangePassword`를 포함한다.
+- `accountStatus=PENDING_PASSWORD_CHANGE` 또는 `mustChangePassword=true`이면 클라이언트는 비밀번호 변경 화면으로 강제 이동해야 한다.
+- 비밀번호 변경은 `PATCH /api/internal/me/password`로 처리하며, 서버는 현재 비밀번호 검증과 복잡도 정책을 동시에 검사한다.
 
 ---
 
@@ -422,6 +429,22 @@ OpenAPI 계약 규칙:
 
 - `GET /api/internal/employees`
 - `GET /api/internal/employees/{employeeId}`
+
+조회 파라미터:
+
+- `keyword`: 이름/사번/이메일 검색
+- `departmentCode`: 부서 코드 필터(`COMMON`, `HR`, `MAINTENANCE`)
+- `accountStatus`: 계정 상태 필터(`PENDING_PASSWORD_CHANGE`, `ACTIVE`, `LOCKED`, `DISABLED`)
+
+컨텍스트 규칙:
+
+- 직원 디렉터리 조회는 운영 목적(휴면/잠금 계정 점검 등)에 따라 `accountStatus` 필터를 사용할 수 있다.
+- 메시지/쪽지 수신자 검색 용도로 사용할 때는 `accountStatus=ACTIVE`를 강제한다.
+
+응답 필드 기준:
+
+- `employeeNo`, `name`, `email`, `departmentCode`, `departmentName`, `position`
+- `orgRole`, `accountStatus`, `mustChangePassword`
 
 ---
 
@@ -539,6 +562,11 @@ OpenAPI 계약 규칙:
 }
 ```
 
+코드 네이밍 규칙:
+
+- 도메인별 접수 API는 `code`를 세분화할 수 있다.
+- 예: 고객 문의 접수는 `SUPPORT_TICKET_ACCEPTED`, 채용/파일 접수는 `FILE_UPLOAD_ACCEPTED`
+
 ---
 
 ## 10.2 파일 상태 확인 API
@@ -565,7 +593,17 @@ OpenAPI 계약 규칙:
 - `REJECTED`
 - `FAILED`
 
-응답 예시:
+응답 분리 원칙:
+
+- 공개 API(`GET /api/external/files/{fileId}/status`)는 `ExternalFileStatusResponse`를 사용한다.
+- 공개 응답의 `reason`은 일반화 코드만 허용한다:
+  `REVIEW_PENDING`, `POLICY_RESTRICTED`, `SCAN_FAILED`, `TEMPORARY_UNAVAILABLE`
+- 공개 응답의 `scanResultCode`는 `V0_SCAN_DISABLED`, `PUBLIC_SCAN_RESULT_UNAVAILABLE`, `null`만 허용한다.
+- 내부 API(`GET /api/internal/files/{fileId}/status`)는 `InternalFileStatusResponse`를 사용한다.
+- 내부 응답의 `reason`은 운영/감사용 상세 코드를 허용한다.
+- 공개 문의 상세(`ExternalSupportTicketDetailResponse.fileStatusReason`)도 동일한 공개 일반화 코드 정책을 따른다.
+
+공개 API 응답 예시:
 
 ```json id="sb4v9l"
 {
@@ -583,7 +621,7 @@ OpenAPI 계약 규칙:
 }
 ```
 
-실패/차단 예시:
+공개 API 실패/차단 예시:
 
 ```json id="3x1rha"
 {
@@ -593,7 +631,24 @@ OpenAPI 계약 규칙:
   "data": {
     "fileId": 12345,
     "status": "FAILED",
-    "scanResultCode": "SCAN_ENGINE_TIMEOUT",
+    "scanResultCode": "PUBLIC_SCAN_RESULT_UNAVAILABLE",
+    "reason": "SCAN_FAILED"
+  },
+  "timestamp": "2026-04-15T12:00:00Z"
+}
+```
+
+내부 API 상세 사유 예시:
+
+```json id="p1m4h2"
+{
+  "success": true,
+  "code": "FILE_STATUS_OK",
+  "message": "파일 상태 조회에 성공했습니다.",
+  "data": {
+    "fileId": 12345,
+    "status": "REJECTED",
+    "scanResultCode": "MALWARE_SIGNATURE_MATCH",
     "reason": "FILE_POLICY_VIOLATION"
   },
   "timestamp": "2026-04-15T12:00:00Z"

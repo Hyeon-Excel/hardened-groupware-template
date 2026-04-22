@@ -146,7 +146,7 @@ MVP는 **테이블형**이 적절하다.
 
 본 페이지 고유 규칙:
 
-- 한 행에서 `ticketStatus`와 `fileStatus`를 동시에 표시한다.
+- 한 행에서 `status`와 `fileStatus`를 동시에 표시한다.
 - 공개 사용자에게 내부 탐지 상세 사유/시그니처/정책 내부값은 노출하지 않는다.
 
 ---
@@ -206,10 +206,9 @@ const supportTicketListItem = {
   title: "솔루션 데모 환경 문의",
   category: "TECHNICAL", // ACCOUNT | RESOURCE | CAREER | TECHNICAL | OTHER
   createdAt: "2026-04-20T11:00:00+09:00",
-  ticketStatus: "RECEIVED", // RECEIVED | REVIEWING | ANSWERED | CLOSED
+  status: "RECEIVED", // RECEIVED | REVIEWING | ANSWERED | CLOSED
   fileId: null, // int64 or null
   fileStatus: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED | null
-  fileStatusReason: null,
 };
 ```
 

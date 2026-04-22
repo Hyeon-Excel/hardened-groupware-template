@@ -24,7 +24,7 @@
 | 페이지명 | 지원자 상세 |
 | 경로 | `/internal/applicants/:applicationId` |
 | 인증 필요 | 예 |
-| 권한 | `MANAGER` 이상 |
+| 권한 | `TEAM_MEMBER` 이상 + `department_code=HR` 또는 `ADMIN` (`EXECUTIVE` 읽기 전용 선택) |
 | 주요 API | `GET /api/internal/applicants/{applicationId}`, `PATCH /api/internal/applicants/{applicationId}/status`, `POST /api/internal/applicants/{applicationId}/notes`, `GET /api/internal/files/{fileId}/status` |
 | 우선순위 | MVP |
 
@@ -40,7 +40,7 @@
 
 ## 4. 페이지 시나리오
 
-1. 매니저가 지원자 목록에서 상세 진입
+1. 인사팀 담당자가 지원자 목록에서 상세 진입
 2. 지원자 기본정보/자기소개/첨부 상태 확인
 3. 상태를 `REVIEWING`, `PASSED`, `REJECTED` 중 하나로 변경
 4. 평가 메모 등록
@@ -97,7 +97,7 @@ const applicantDetailState = {
 
 ## 8. 보안 및 감사 포인트
 
-- 상태 변경/메모 등록은 `MANAGER` 이상만 가능
+- 상태 변경/메모 등록은 `HR` 부서 권한 또는 `ADMIN`만 가능
 - 민감정보(개인 연락처)는 최소 노출
 - 상태 변경 이벤트는 감사 로그 대상(정본: [SECURITY_BASELINE.md](../../../security/SECURITY_BASELINE.md))
 - 첨부파일 상세 보안 판정은 내부 화면에서만 표시

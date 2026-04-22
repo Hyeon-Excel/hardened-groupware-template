@@ -4,16 +4,22 @@
 CREATE TABLE IF NOT EXISTS internal_employees (
   employee_id BIGINT PRIMARY KEY AUTO_INCREMENT,
   employee_no VARCHAR(40) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
   login_id VARCHAR(80) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(120) NOT NULL,
-  department VARCHAR(120),
+  department_code VARCHAR(40) NOT NULL DEFAULT 'COMMON',
+  department_name VARCHAR(120),
   position VARCHAR(120),
-  role VARCHAR(20) NOT NULL DEFAULT 'EMPLOYEE',
-  status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  org_role VARCHAR(20) NOT NULL DEFAULT 'TEAM_MEMBER',
+  account_status VARCHAR(40) NOT NULL DEFAULT 'PENDING_PASSWORD_CHANGE',
+  must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+  password_changed_at DATETIME,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
-  KEY idx_internal_employees_role_status (role, status)
+  KEY idx_internal_employees_org_role_status (org_role, account_status),
+  KEY idx_internal_employees_department_status (department_code, account_status),
+  KEY idx_internal_employees_name (name)
 );
 
 -- File bytes are stored in object storage.

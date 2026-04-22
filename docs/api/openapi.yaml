@@ -480,7 +480,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FileStatusResponse"
+                $ref: "#/components/schemas/ExternalFileStatusResponse"
         "403":
           $ref: "#/components/responses/ForbiddenResponse"
         "404":
@@ -624,6 +624,34 @@ paths:
 
         "400":
           $ref: "#/components/responses/BadRequestResponse"
+  /api/internal/me/password:
+    patch:
+      tags: [Internal Auth]
+      summary: 내부 사용자 본인 비밀번호 변경
+      operationId: changeInternalMyPassword
+      description: 초기 로그인 강제 변경 및 90일 주기 변경에 사용하는 엔드포인트.
+      security:
+        - InternalSessionAuth: []
+          CsrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalPasswordChangeRequest"
+      responses:
+        "200":
+          description: 비밀번호 변경 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseVoid"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "409":
+          $ref: "#/components/responses/ConflictResponse"
   /api/internal/notices:
     get:
       tags: [Internal Notices]
@@ -738,6 +766,8 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/SizeParam"
         - $ref: "#/components/parameters/KeywordParam"
+        - $ref: "#/components/parameters/DepartmentCodeParam"
+        - $ref: "#/components/parameters/EmployeeAccountStatusParam"
       responses:
         "200":
           description: 사원 목록 조회 성공
@@ -1171,7 +1201,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FileStatusResponse"
+                $ref: "#/components/schemas/InternalFileStatusResponse"
 
         "400":
           $ref: "#/components/responses/BadRequestResponse"
@@ -1447,6 +1477,20 @@ components:
       schema:
         type: string
 
+    DepartmentCodeParam:
+      in: query
+      name: departmentCode
+      schema:
+        type: string
+        enum: [COMMON, HR, MAINTENANCE]
+
+    EmployeeAccountStatusParam:
+      in: query
+      name: accountStatus
+      schema:
+        type: string
+        enum: [PENDING_PASSWORD_CHANGE, ACTIVE, LOCKED, DISABLED]
+
     NewsIdParam:
       in: path
       name: newsId
@@ -1718,14 +1762,41 @@ components:
     InternalUserSession:
       type: object
       properties:
-        userId:
+        employeeId:
           type: integer
           format: int64
         employeeNo:
           type: string
-        role:
+        name:
           type: string
-          example: EMPLOYEE
+        email:
+          type: string
+          format: email
+        orgRole:
+          type: string
+          enum: [ADMIN, EXECUTIVE, DEPT_HEAD, TEAM_LEAD, TEAM_MEMBER]
+        departmentCode:
+          type: string
+          enum: [COMMON, HR, MAINTENANCE]
+        accountStatus:
+          type: string
+          enum: [PENDING_PASSWORD_CHANGE, ACTIVE, LOCKED, DISABLED]
+        mustChangePassword:
+          type: boolean
+        passwordExpiresAt:
+          type: [string, "null"]
+          format: date-time
+
+    InternalPasswordChangeRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
 
     PageMeta:
       type: object
@@ -1871,9 +1942,11 @@ components:
                     v1에서는 초기값 "PENDING"이며 상태 조회 API로 전이 확인.
                 scanResultCode:
                   type: [string, "null"]
+                  enum: [V0_SCAN_DISABLED, PUBLIC_SCAN_RESULT_UNAVAILABLE, null]
                   description: |
                     첨부파일이 없으면 null.
                     v0 기준선에서 첨부가 있는 경우 "V0_SCAN_DISABLED" 고정.
+                    공개 응답은 내부 스캔 상세 코드를 노출하지 않는다.
                 scannedAt:
                   type: [string, "null"]
                   format: date-time
@@ -1951,6 +2024,8 @@ components:
                     v0 기준선에서 첨부가 있는 경우 "APPROVED" 고정.
                 fileStatusReason:
                   type: [string, "null"]
+                  enum: [REVIEW_PENDING, POLICY_RESTRICTED, SCAN_FAILED, TEMPORARY_UNAVAILABLE, null]
+                  description: 공개 사용자용 일반화 사유 코드(내부 탐지 상세 미노출).
                 createdAt:
                   type: string
                   format: date-time
@@ -2096,6 +2171,10 @@ components:
                   enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED]
                 scanResultCode:
                   type: [string, "null"]
+                  enum: [V0_SCAN_DISABLED, PUBLIC_SCAN_RESULT_UNAVAILABLE, null]
+                  description: |
+                    공개 응답은 내부 스캔 상세 코드를 노출하지 않는다.
+                    v0 기준선은 "V0_SCAN_DISABLED", v1은 일반화 코드 또는 null을 사용한다.
                 scannedAt:
                   type: [string, "null"]
                   format: date-time
@@ -2142,7 +2221,34 @@ components:
                 page:
                   $ref: "#/components/schemas/PageMeta"
 
-    FileStatusResponse:
+    ExternalFileStatusResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [fileId, status]
+              properties:
+                fileId:
+                  type: integer
+                  format: int64
+                status:
+                  type: string
+                  enum: [PENDING, SCANNING, APPROVED, REJECTED, FAILED]
+                scanResultCode:
+                  type: [string, "null"]
+                  enum: [V0_SCAN_DISABLED, PUBLIC_SCAN_RESULT_UNAVAILABLE, null]
+                  description: 공개 사용자용 일반화 코드만 허용(내부 탐지 상세 미노출).
+                scannedAt:
+                  type: [string, "null"]
+                  format: date-time
+                reason:
+                  type: [string, "null"]
+                  enum: [REVIEW_PENDING, POLICY_RESTRICTED, SCAN_FAILED, TEMPORARY_UNAVAILABLE, null]
+                  description: 공개 사용자용 일반화 사유 코드(내부 탐지 상세 미노출).
+
+    InternalFileStatusResponse:
       allOf:
         - $ref: "#/components/schemas/ApiResponseBase"
         - type: object
@@ -2164,6 +2270,7 @@ components:
                   format: date-time
                 reason:
                   type: [string, "null"]
+                  description: 내부 운영/감사용 상세 사유 코드.
 
     InternalNoticeCreateRequest:
       type: object
@@ -2252,13 +2359,24 @@ components:
           type: string
         name:
           type: string
-        department:
+        departmentCode:
+          type: string
+          enum: [COMMON, HR, MAINTENANCE]
+        departmentName:
           type: string
         position:
           type: string
         email:
           type: string
           format: email
+        orgRole:
+          type: string
+          enum: [ADMIN, EXECUTIVE, DEPT_HEAD, TEAM_LEAD, TEAM_MEMBER]
+        accountStatus:
+          type: string
+          enum: [PENDING_PASSWORD_CHANGE, ACTIVE, LOCKED, DISABLED]
+        mustChangePassword:
+          type: boolean
 
     EmployeeDetailResponse:
       allOf:
@@ -2270,13 +2388,14 @@ components:
                 - $ref: "#/components/schemas/EmployeeSummary"
                 - type: object
                   properties:
-                    phone:
+                    loginId:
                       type: string
-                    role:
-                      type: string
-                    status:
-                      type: string
-                      enum: [ACTIVE, INACTIVE]
+                    passwordChangedAt:
+                      type: [string, "null"]
+                      format: date-time
+                    passwordExpiresAt:
+                      type: [string, "null"]
+                      format: date-time
 
     EmployeeListResponse:
       allOf:

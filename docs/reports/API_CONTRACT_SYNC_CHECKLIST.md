@@ -9,7 +9,7 @@
 ## 2. 기준 시점
 
 - 작성일: 2026-04-15
-- 최근 업데이트: 2026-04-20 (파일 상태머신 용어/스키마 정리, internal admin file-security-logs 정합화)
+- 최근 업데이트: 2026-04-21 (internal 권한/세션 스키마 반영에 따른 계약 수치 재검증)
 - 비교 기준:
   - API 목록 문서: [docs/api/API.md](../api/API.md)
   - 계약 스펙: [docs/api/openapi.yaml](../api/openapi.yaml)
@@ -20,8 +20,8 @@
 
 ## 3. 요약 결과
 
-- API.md method+path: 65개
-- OpenAPI method+path: 65개
+- API.md method+path: 66개
+- OpenAPI method+path: 66개
 - 실제 누락(예시 쿼리 제외): 0개
 
 진행 이력:

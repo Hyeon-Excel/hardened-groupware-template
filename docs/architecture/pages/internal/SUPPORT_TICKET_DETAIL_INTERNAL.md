@@ -24,7 +24,7 @@
 | 페이지명 | 문의 상세 |
 | 경로 | `/internal/support-tickets/:ticketId` |
 | 인증 필요 | 예 |
-| 권한 | `MANAGER` 이상 |
+| 권한 | `TEAM_MEMBER` 이상 + `department_code=MAINTENANCE` 또는 `ADMIN` (`EXECUTIVE` 읽기 전용 선택) |
 | 주요 API | `GET /api/internal/support-tickets/{ticketId}`, `PATCH /api/internal/support-tickets/{ticketId}/status`, `POST /api/internal/support-tickets/{ticketId}/reply`, `GET /api/internal/files/{fileId}/status` |
 | 우선순위 | MVP |
 
@@ -40,7 +40,7 @@
 
 ## 4. 대표 사용자 시나리오
 
-1. 매니저가 문의 목록에서 상세 진입
+1. 유지보수팀 담당자가 문의 목록에서 상세 진입
 2. 제목/내용/작성자/작성일 확인
 3. 상태를 `REVIEWING`, `ANSWERED`, `CLOSED`로 변경
 4. 답변 작성 후 등록

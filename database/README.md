@@ -42,6 +42,26 @@ v0 기본값 규칙:
 - `scan_status='APPROVED'`
 - `scan_result_code='V0_SCAN_DISABLED'`
 
+### 1.2 internal_employees 권한/계정 필드 기준
+
+내부 접근제어 정책 정본(`docs/rules/INTERNAL_ACCESS_CONTROL_POLICY.md`)에 따라
+`internal_employees`는 아래 필드를 기준으로 관리한다.
+
+- 식별: `employee_id`, `employee_no`, `email`, `login_id`
+- 조직/권한: `org_role`, `department_code`, `department_name`, `position`
+- 계정 상태: `account_status`, `must_change_password`, `password_changed_at`
+
+권장 상태값:
+
+- `org_role`: `ADMIN`, `EXECUTIVE`, `DEPT_HEAD`, `TEAM_LEAD`, `TEAM_MEMBER`
+- `department_code`: `COMMON`, `HR`, `MAINTENANCE`
+- `account_status`: `PENDING_PASSWORD_CHANGE`, `ACTIVE`, `LOCKED`, `DISABLED`
+
+운영 규칙:
+
+- 초기 계정은 `account_status='PENDING_PASSWORD_CHANGE'`, `must_change_password=true`로 시작한다.
+- 직원 이메일은 `{employee_no}@secuworks.com` 규칙으로 생성한다.
+
 ### 2) Cross-DB 참조 무결성 기준
 
 `external_db`와 `internal_db` 간 직접 FK는 사용할 수 없으므로 아래 전략을 사용한다.

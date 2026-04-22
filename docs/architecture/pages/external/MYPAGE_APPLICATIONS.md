@@ -217,7 +217,6 @@ const applicationListItem = {
   applicationStatus: "SUBMITTED", // SUBMITTED | REVIEWING | PASSED | REJECTED
   fileId: null, // int64 or null
   fileStatus: null, // PENDING | SCANNING | APPROVED | REJECTED | FAILED | null
-  fileStatusReason: null,
 };
 ```
 

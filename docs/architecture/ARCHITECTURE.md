@@ -295,7 +295,10 @@ flowchart LR
 ## 6.3 역할 예시
 
 - external: `PUBLIC_USER`
-- internal: `EMPLOYEE`, `MANAGER`, `ADMIN`
+- internal: `TEAM_MEMBER`, `TEAM_LEAD`, `DEPT_HEAD`, `EXECUTIVE`, `ADMIN`
+
+내부 조직/직급/부서 기반 세분화 권한 정본은
+`docs/rules/INTERNAL_ACCESS_CONTROL_POLICY.md`를 따른다.
 
 ---
 

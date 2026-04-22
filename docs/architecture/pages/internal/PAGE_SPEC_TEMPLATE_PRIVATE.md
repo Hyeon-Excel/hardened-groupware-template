@@ -30,7 +30,8 @@
 | 페이지명 | 예: 지원자 상세 |
 | 경로 | `/internal/...` |
 | 인증 필요 | 예 |
-| 권한 | `EMPLOYEE` / `MANAGER` / `ADMIN` |
+| 직급 권한 | `TEAM_MEMBER` / `TEAM_LEAD` / `DEPT_HEAD` / `EXECUTIVE` / `ADMIN` |
+| 부서 범위 | `COMMON` / `HR` / `MAINTENANCE` / `ALL` |
 | 주요 API | `GET /api/internal/...` |
 | 우선순위 | MVP / 2차 |
 
@@ -39,6 +40,7 @@
 ## 3. 접근 제어
 
 - 비로그인: `/internal/login` 이동
+- 비밀번호 변경 강제 상태: `/internal/mypage/password-change` 이동
 - 권한 부족: `/internal/403`
 - 리소스 없음: `/internal/404`
 
@@ -106,6 +108,8 @@ const pageState = {
 ## 10. 테스트 체크리스트
 
 - [ ] 권한별 접근 제어 동작
+- [ ] 직급/부서 조합 권한 동작
+- [ ] 비밀번호 변경 강제 게이트 동작
 - [ ] 조회/수정 API 성공 경로
 - [ ] 상태 변경 실패/충돌 처리
 - [ ] 감사 로그 기록 검증
